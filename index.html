@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>めぐち聖書通読アプリ</title>
+    <link id="favicon-link" rel="icon" type="image/png" href="">
+    <meta name="description" content="旧約・新約聖書を計画的に通読するためのサポートアプリ。通読プランの自動生成、進捗管理、バックアップ機能を提供します。">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Noto+Serif+JP:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans JP', 'sans-serif'],
+                        serif: ['Noto Serif JP', 'serif'],
+                    },
+                    colors: {
+                        parchment: {
+                            50: '#fef9f4',
+                            100: '#fdeee0',
+                            200: '#fbe0c8',
+                            300: '#f7cda5',
+                            400: '#f2b87e',
+                            500: '#e9a161',
+                            600: '#d4884a',
+                            700: '#b8713d',
+                            800: '#975c35',
+                            900: '#7a4d2e',
+                        },
+                        olive: {
+                            50: '#f0f7f1',
+                            100: '#dceee0',
+                            200: '#bde0c5',
+                            300: '#93cda0',
+                            400: '#6cb87e',
+                            500: '#4da364',
+                            600: '#3d8a52',
+                            700: '#336f44',
+                            800: '#2c5939',
+                            900: '#254a30',
+                        },
+                        scripture: {
+                            50: '#f8f7fb',
+                            100: '#eeedf5',
+                            200: '#dddaeb',
+                            300: '#c4bfdb',
+                            400: '#a9a1c7',
+                            500: '#9187b3',
+                            600: '#7a6f9e',
+                            700: '#655b84',
+                            800: '#544c6d',
+                            900: '#46405b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* テーマカラー CSS変数 */
+        :root {
+            --c50: #f0f7f1;
+            --c100: #dceee0;
+            --c200: #bde0c5;
+            --c300: #93cda0;
+            --c400: #6cb87e;
+            --c500: #4da364;
+            --c600: #3d8a52;
+            --c700: #336f44;
+            --c800: #2c5939;
+            --c900: #254a30;
+        }
+
+        .theme-stroke {
+            stroke: var(--c500);
+        }
+        /* Tailwind olive テーマカラーオーバーライド */
+        .bg-olive-50 { background-color: var(--c50) !important; }
+        .bg-olive-100 { background-color: var(--c100) !important; }
+        .text-olive-500 { color: var(--c500) !important; }
+        .text-olive-600 { color: var(--c600) !important; }
+        .text-olive-700 { color: var(--c700) !important; }
+        .border-olive-200 { border-color: var(--c200) !important; }
+        .border-olive-300 { border-color: var(--c300) !important; }
+        .border-olive-400 { border-color: var(--c400) !important; }
+        .border-olive-500 { border-color: var(--c500) !important; }
+        .from-olive-400 { --tw-gradient-from: var(--c400) !important; --tw-gradient-to: transparent !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+        .to-olive-600 { --tw-gradient-to: var(--c600) !important; }
+        .ring-olive-300 { --tw-ring-color: var(--c300) !important; }
+        .ring-olive-500 { --tw-ring-color: var(--c500) !important; }
+        .focus\\:border-olive-500:focus { border-color: var(--c500) !important; }
+        .focus\\:ring-olive-500:focus { --tw-ring-color: var(--c500) !important; }
+        .hover\\:border-olive-400:hover { border-color: var(--c400) !important; }
+        .hover\\:bg-olive-50:hover { background-color: var(--c50) !important; }
+        .hover\\:text-olive-700:hover { color: var(--c700) !important; }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+
+        . {
+            font-family: 'Noto Serif JP', serif;
+        }
+
+        /* スクロールバー */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c4bfdb;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a9a1c7;
+        }
+
+        /* トランジション */
+        .tab-transition {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.35s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* プログレスバー */
+        .progress-bar {
+            background: linear-gradient(90deg, var(--c500), var(--c400), var(--c300));
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* チェックボックス */
+        .custom-check {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border: 2px solid #dddaeb;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .custom-check:checked {
+            background: var(--c500);
+            border-color: var(--c500);
+        }
+
+        .custom-check:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30%;
+            height: 55%;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: translate(-70%, -55%) rotate(45deg);
+        }
+
+        .custom-check:hover {
+            border-color: var(--c400);
+        }
+
+        /* カード */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(221, 218, 235, 0.5);
+        }
+
+        /* ボタンホバー */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--c500) 0%, var(--c600) 100%);
+            transition: all 0.25s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px color-mix(in srgb, var(--c500) 35%, transparent);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #e9a161 0%, #d4884a 100%);
+            transition: all 0.25s ease;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(180, 130, 70, 0.25);
+        }
+
+        /* タブインジケーター */
+        .tab-active {
+            color: var(--c500);
+            border-bottom: 3px solid var(--c500);
+            font-weight: 600;
+        }
+
+        /* 日次カード */
+        .day-card {
+            transition: all 0.2s ease;
+        }
+
+        .day-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .day-card.completed {
+            background: linear-gradient(135deg, rgba(220, 238, 224, 0.5), rgba(189, 224, 197, 0.3));
+            border-color: #93cda0;
+        }
+
+        /* モーダル */
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+        }
+
+        /* 統計カード */
+        .stat-card {
+            background: linear-gradient(135deg, rgba(248, 247, 251, 0.9), rgba(238, 237, 245, 0.7));
+        }
+
+        /* 月別アコーディオン */
+        .month-group summary {
+            cursor: pointer;
+            list-style: none;
+            user-select: none;
+        }
+
+        .month-group summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .month-group summary .chevron {
+            transition: transform 0.25s ease;
+        }
+
+        .month-group[open] summary .chevron {
+            transform: rotate(90deg);
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-[#f0f7f1] via-[#f8f7fb] to-[#fef9f4] min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="sticky top-0 z-50 glass-card shadow-sm">
+        <div class="max-w-3xl mx-auto px-4 py-3">
+            <div class="flex items-center gap-3">
+                <!-- 聖書アイコン -->
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-olive-400 to-olive-600 flex items-center justify-center shadow-md flex-shrink-0">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                        <path d="M12 6v7" />
+                        <path d="M9 10h6" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-scripture-800 leading-tight">めぐち聖書通読アプリ</h1>
+                    <p class="text-xs text-scripture-500">～日々、みことばと共に歩む～</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ナビゲーション -->
+    <nav class="sticky top-[60px] z-40 glass-card border-b border-scripture-200/30">
+        <div class="max-w-3xl mx-auto flex">
+            <button onclick="switchTab('plan')" id="tab-plan"
+                class="flex-1 py-3 text-sm text-center tab-active tab-transition">
+                <span class="flex items-center justify-center gap-1.5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    プラン
+                </span>
+            </button>
+            <button onclick="switchTab('progress')" id="tab-progress"
+                class="flex-1 py-3 text-sm text-center text-scripture-500 tab-transition">
+                <span class="flex items-center justify-center gap-1.5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
+                    進捗
+                </span>
+            </button>
+            <button onclick="switchTab('settings')" id="tab-settings"
+                class="flex-1 py-3 text-sm text-center text-scripture-500 tab-transition">
+                <span class="flex items-center justify-center gap-1.5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                    設定
+                </span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-3xl mx-auto px-4 py-6 pb-24">
+
+        <!-- ============ プランタブ ============ -->
+        <div id="content-plan" class="fade-in">
+
+            <!-- 現在のプラン概要 -->
+            <div id="plan-summary" class="hidden mb-6">
+                <div class="glass-card rounded-2xl p-5 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="font-bold text-scripture-800">現在のプラン</h2>
+                        <button onclick="deletePlan()"
+                            class="text-xs text-red-400 hover:text-red-600 transition-colors">プラン削除</button>
+                    </div>
+                    <div id="plan-books-display" class="text-xs text-scripture-500 mb-3 flex flex-wrap gap-1"></div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                        <div class="stat-card rounded-xl p-3 text-center">
+                            <p class="text-xs text-scripture-500 mb-1">期間</p>
+                            <p id="plan-period" class="text-sm font-semibold text-scripture-800">-</p>
+                        </div>
+                        <div class="stat-card rounded-xl p-3 text-center">
+                            <p class="text-xs text-scripture-500 mb-1">日数</p>
+                            <p id="plan-days" class="text-sm font-semibold text-scripture-800">-</p>
+                        </div>
+                        <div class="stat-card rounded-xl p-3 text-center">
+                            <p class="text-xs text-scripture-500 mb-1">1日あたり</p>
+                            <p id="plan-per-day" class="text-sm font-semibold text-scripture-800">-</p>
+                        </div>
+                        <div class="stat-card rounded-xl p-3 text-center">
+                            <p class="text-xs text-scripture-500 mb-1">達成率</p>
+                            <p id="plan-rate" class="text-sm font-semibold text-olive-600">0%</p>
+                        </div>
+                    </div>
+                    <!-- プログレスバー -->
+                    <div class="w-full h-3 bg-scripture-100 rounded-full overflow-hidden">
+                        <div id="plan-progress-bar" class="progress-bar h-full rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 今日の読書 -->
+            <div id="today-reading" class="hidden mb-6">
+                <div class="glass-card rounded-2xl p-5 shadow-sm border-l-4 border-olive-500">
+                    <h3 class="font-bold text-scripture-800 mb-1 flex items-center gap-2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="theme-stroke"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        今日の読書
+                    </h3>
+                    <p class="text-xs text-scripture-500 mb-3" id="today-date">-</p>
+                    <div id="today-chapters" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- プラン作成フォーム -->
+            <div id="plan-form" class="glass-card rounded-2xl p-5 shadow-sm">
+                <h2 class="font-bold text-scripture-800 mb-4 flex items-center gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="theme-stroke" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="16" />
+                        <line x1="8" y1="12" x2="16" y2="12" />
+                    </svg>
+                    通読プランを作成
+                </h2>
+
+                <div class="space-y-4">
+                    <!-- 書巻選択 -->
+                    <div>
+                        <label class="block text-sm font-medium text-scripture-700 mb-2">読む書巻を選択</label>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <button onclick="selectPreset('all')" id="preset-all"
+                                class="text-xs px-3 py-1.5 rounded-lg border-2 border-scripture-200 text-scripture-600 hover:border-olive-400 transition-all">聖書全巻</button>
+                            <button onclick="selectPreset('old')" id="preset-old"
+                                class="text-xs px-3 py-1.5 rounded-lg border-2 border-scripture-200 text-scripture-600 hover:border-olive-400 transition-all">旧約聖書</button>
+                            <button onclick="selectPreset('new')" id="preset-new"
+                                class="text-xs px-3 py-1.5 rounded-lg border-2 border-scripture-200 text-scripture-600 hover:border-olive-400 transition-all">新約聖書</button>
+                        </div>
+                        <div id="selected-books-info" class="text-xs text-scripture-500 mb-2"></div>
+                        <details id="book-selector-panel"
+                            class="month-group rounded-xl border border-scripture-200 overflow-hidden">
+                            <summary
+                                class="px-3 py-2 text-xs text-olive-600 cursor-pointer bg-scripture-50/50 hover:bg-scripture-50 transition-colors flex items-center gap-1">
+                                <svg class="chevron flex-shrink-0" width="12" height="12" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6" />
+                                </svg>
+                                個別に選択
+                            </summary>
+                            <div id="book-selector-list" class="p-3 max-h-64 overflow-y-auto space-y-3 text-xs"></div>
+                        </details>
+                    </div>
+
+                    <!-- 読み進め方式 -->
+                    <div id="reading-mode-section">
+                        <label class="block text-sm font-medium text-scripture-700 mb-2">読み進め方式</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setReadingMode('sequential')" id="rm-sequential"
+                                class="py-2 px-3 rounded-xl text-xs border-2 border-olive-500 bg-olive-50 text-olive-700 font-medium transition-all">
+                                <div class="font-bold mb-0.5">📖 順番に読む</div>
+                                <div class="text-[10px] opacity-70">書巻を一つずつ読み進める</div>
+                            </button>
+                            <button onclick="setReadingMode('parallel')" id="rm-parallel"
+                                class="py-2 px-3 rounded-xl text-xs border-2 border-scripture-200 text-scripture-600 hover:border-olive-400 transition-all">
+                                <div class="font-bold mb-0.5">📚 同時に読む</div>
+                                <div class="text-[10px] opacity-70">複数書巻を並行して読む</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 期間タイプ -->
+                    <div>
+                        <label class="block text-sm font-medium text-scripture-700 mb-2">読了目標</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="setPeriodType('week')" id="pt-week"
+                                class="py-2.5 px-3 rounded-xl text-sm border-2 border-scripture-200 text-scripture-600 hover:border-olive-400 transition-all">
+                                週単位
+                            </button>
+                            <button onclick="setPeriodType('month')" id="pt-month"
+                                class="py-2.5 px-3 rounded-xl text-sm border-2 border-olive-500 bg-olive-50 text-olive-700 font-medium">
+                                月単位
+                            </button>
+                            <button onclick="setPeriodType('custom')" id="pt-custom"
+                                class="py-2.5 px-3 rounded-xl text-sm border-2 border-scripture-200 text-scripture-600 hover:border-olive-400 transition-all">
+                                日付指定
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 週単位 -->
+                    <div id="opt-week" class="hidden">
+                        <label class="block text-sm font-medium text-scripture-700 mb-1">何週間で読了？</label>
+                        <select id="sel-weeks"
+                            class="w-full rounded-xl border-2 border-scripture-200 px-4 py-2.5 text-sm focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none transition-colors bg-white">
+                            <option value="1">1週間</option>
+                            <option value="2" selected>2週間</option>
+                            <option value="3">3週間</option>
+                            <option value="4">4週間</option>
+                            <option value="6">6週間</option>
+                            <option value="8">8週間</option>
+                            <option value="12">12週間</option>
+                            <option value="26">26週間（半年）</option>
+                            <option value="52">52週間（1年）</option>
+                        </select>
+                    </div>
+
+                    <!-- 月単位 -->
+                    <div id="opt-month">
+                        <label class="block text-sm font-medium text-scripture-700 mb-1">何ヶ月で読了？</label>
+                        <select id="sel-months"
+                            class="w-full rounded-xl border-2 border-scripture-200 px-4 py-2.5 text-sm focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none transition-colors bg-white">
+                            <option value="1" selected>1ヶ月</option>
+                            <option value="2">2ヶ月</option>
+                            <option value="3">3ヶ月</option>
+                            <option value="6">6ヶ月</option>
+                            <option value="12">12ヶ月（1年）</option>
+                            <option value="24">24ヶ月（2年）</option>
+                        </select>
+                    </div>
+
+                    <!-- 日付指定 -->
+                    <div id="opt-custom" class="hidden">
+                        <label class="block text-sm font-medium text-scripture-700 mb-1">終了日を選択</label>
+                        <input type="date" id="sel-enddate"
+                            class="w-full rounded-xl border-2 border-scripture-200 px-4 py-2.5 text-sm focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none transition-colors bg-white">
+                    </div>
+
+                    <!-- 開始日 -->
+                    <div>
+                        <label class="block text-sm font-medium text-scripture-700 mb-1">開始日</label>
+                        <input type="date" id="sel-startdate"
+                            class="w-full rounded-xl border-2 border-scripture-200 px-4 py-2.5 text-sm focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none transition-colors bg-white">
+                    </div>
+
+                    <!-- プレビュー -->
+                    <div id="plan-preview" class="bg-olive-50/60 rounded-xl p-4 text-sm text-scripture-700">
+                        <p class="flex items-center gap-1.5 mb-1">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="theme-stroke"
+                                stroke-width="2">
+                                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+                                <path d="M12 8v4M12 16h.01" />
+                            </svg>
+                            プランのプレビュー
+                        </p>
+                        <p id="preview-text" class="text-scripture-600">書巻と期間を選択してプレビューを確認してください</p>
+                    </div>
+
+                    <!-- 作成ボタン -->
+                    <button onclick="createPlan()"
+                        class="btn-primary w-full text-white font-semibold py-3 rounded-xl shadow-md text-sm">
+                        プランを作成する
+                    </button>
+                </div>
+            </div>
+
+            <!-- 日次スケジュール一覧 -->
+            <div id="schedule-list" class="mt-6 hidden">
+                <h3 class="font-bold text-scripture-800 mb-3 flex items-center gap-2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="theme-stroke" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6" />
+                        <line x1="8" y1="12" x2="21" y2="12" />
+                        <line x1="8" y1="18" x2="21" y2="18" />
+                        <line x1="3" y1="6" x2="3.01" y2="6" />
+                        <line x1="3" y1="12" x2="3.01" y2="12" />
+                        <line x1="3" y1="18" x2="3.01" y2="18" />
+                    </svg>
+                    全スケジュール
+                </h3>
+                <div id="schedule-cards" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- ============ 進捗タブ ============ -->
+        <div id="content-progress" class="hidden">
+            <!-- 全体進捗 -->
+            <div class="glass-card rounded-2xl p-5 shadow-sm mb-6">
+                <h2 class="font-bold text-scripture-800 mb-3">全体の進捗</h2>
+                <div class="flex items-center gap-4 mb-3">
+                    <div class="flex-1 h-4 bg-scripture-100 rounded-full overflow-hidden">
+                        <div id="total-progress-bar" class="progress-bar h-full rounded-full" style="width: 0%"></div>
+                    </div>
+                    <span id="total-progress-text"
+                        class="text-lg font-bold text-olive-600 min-w-[50px] text-right">0%</span>
+                </div>
+                <div class="grid grid-cols-3 gap-3 text-center">
+                    <div class="stat-card rounded-xl p-3">
+                        <p class="text-xs text-scripture-500">完了</p>
+                        <p id="stat-done" class="text-lg font-bold text-olive-600">0</p>
+                        <p class="text-xs text-scripture-400">章</p>
+                    </div>
+                    <div class="stat-card rounded-xl p-3">
+                        <p class="text-xs text-scripture-500">残り</p>
+                        <p id="stat-remaining" class="text-lg font-bold text-parchment-600">0</p>
+                        <p class="text-xs text-scripture-400">章</p>
+                    </div>
+                    <div class="stat-card rounded-xl p-3">
+                        <p class="text-xs text-scripture-500">読了節数</p>
+                        <p id="stat-verses" class="text-lg font-bold text-scripture-700">0</p>
+                        <p id="stat-total-verses" class="text-xs text-scripture-400">/ 0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 章一覧 -->
+            <div class="glass-card rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-bold text-scripture-800">書巻の一覧</h2>
+                    <div class="flex gap-2">
+                        <button onclick="uncheckAll()"
+                            class="text-xs text-scripture-500 hover:text-red-500 transition-colors px-2 py-1 rounded-lg hover:bg-red-50">全解除</button>
+                        <button onclick="checkAll()"
+                            class="text-xs text-olive-600 hover:text-olive-700 transition-colors px-2 py-1 rounded-lg hover:bg-olive-50">全完了</button>
+                    </div>
+                </div>
+                <div id="chapter-list" class="space-y-1.5"></div>
+            </div>
+        </div>
+
+        <!-- ============ 設定タブ ============ -->
+        <div id="content-settings" class="hidden">
+            <div class="space-y-4">
+                <!-- バックアップ -->
+                <div class="glass-card rounded-2xl p-5 shadow-sm">
+                    <h2 class="font-bold text-scripture-800 mb-1 flex items-center gap-2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="theme-stroke"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
+                        データのバックアップ
+                    </h2>
+                    <p class="text-xs text-scripture-500 mb-4">通読プランと進捗データをJSONファイルとして保存します。</p>
+                    <button onclick="exportData()"
+                        class="btn-primary w-full text-white font-semibold py-3 rounded-xl shadow-md text-sm">
+                        バックアップをダウンロード
+                    </button>
+                </div>
+
+                <!-- 復元 -->
+                <div class="glass-card rounded-2xl p-5 shadow-sm">
+                    <h2 class="font-bold text-scripture-800 mb-1 flex items-center gap-2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e9a161" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        データの復元
+                    </h2>
+                    <p class="text-xs text-scripture-500 mb-4">バックアップしたJSONファイルからデータを復元します。現在のデータは上書きされます。</p>
+                    <label
+                        class="btn-secondary block w-full text-white font-semibold py-3 rounded-xl shadow-md text-sm text-center cursor-pointer">
+                        ファイルを選択して復元
+                        <input type="file" accept=".json" onchange="importData(event)" class="hidden">
+                    </label>
+                </div>
+
+                <!-- データクリア -->
+                <div class="glass-card rounded-2xl p-5 shadow-sm">
+                    <h2 class="font-bold text-scripture-800 mb-1 flex items-center gap-2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                        データの初期化
+                    </h2>
+                    <p class="text-xs text-scripture-500 mb-4">すべてのデータを削除し、初期状態に戻します。この操作は取り消せません。</p>
+                    <button onclick="clearAllData()"
+                        class="w-full bg-red-50 text-red-600 font-semibold py-3 rounded-xl text-sm border-2 border-red-200 hover:bg-red-100 transition-colors">
+                        すべてのデータを削除
+                    </button>
+                </div>
+
+
+                <!-- テーマカラー -->
+                <div class="glass-card rounded-2xl p-5 shadow-sm">
+                    <h2 class="font-bold text-scripture-800 mb-3 flex items-center gap-2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="theme-stroke"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 2a7 7 0 0 0 0 14h7" />
+                        </svg>
+                        テーマカラー
+                    </h2>
+                    <div id="theme-grid" class="grid grid-cols-5 gap-2"></div>
+                </div>
+
+                <!-- ファビコン設定 -->
+                <div class="glass-card rounded-2xl p-5 shadow-sm">
+                    <h2 class="font-bold text-scripture-800 mb-1 flex items-center gap-2">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="theme-stroke"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        ファビコン設定
+                    </h2>
+                    <p class="text-xs text-scripture-500 mb-3">画像URLまたはBase64文字列を入力してファビコンを設定します。</p>
+                    <div class="flex gap-2 mb-2">
+                        <input type="text" id="favicon-input" placeholder="画像URL または data:image/png;base64,..."
+                            class="flex-1 rounded-xl border-2 border-scripture-200 px-3 py-2 text-xs focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none bg-white">
+                        <button onclick="setFavicon()"
+                            class="btn-primary text-white text-xs px-4 py-2 rounded-xl">設定</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <label
+                            class="btn-secondary text-white text-xs px-3 py-1.5 rounded-lg cursor-pointer text-center">
+                            画像を選択
+                            <input type="file" accept="image/*" onchange="loadFaviconFile(event)" class="hidden">
+                        </label>
+                        <button onclick="clearFavicon()"
+                            class="text-xs text-scripture-500 hover:text-red-500 transition-colors px-2 py-1 rounded-lg hover:bg-red-50">クリア</button>
+                    </div>
+                    <div id="favicon-preview" class="mt-2 hidden">
+                        <p class="text-xs text-scripture-500 mb-1">プレビュー:</p>
+                        <img id="favicon-preview-img" class="w-8 h-8 rounded border border-scripture-200">
+                    </div>
+                </div>
+
+                <!-- アプリ情報 -->
+                <div class="glass-card rounded-2xl p-5 shadow-sm">
+                    <h2 class="font-bold text-scripture-800 mb-3">このアプリについて</h2>
+                    <div class="text-sm text-scripture-600 space-y-2">
+                        <p>旧約・新約聖書全66巻を計画的に通読するためのサポートアプリです。</p>
+                        <ul class="list-disc list-inside space-y-1 text-scripture-500">
+                            <li>書巻を自由に選択して通読プランを自動生成</li>
+                            <li>節レベルの均等配分で無理のないプランニング</li>
+                            <li>章ごとの読了チェックと達成率の表示</li>
+                            <li>データはブラウザのLocalStorageに保存</li>
+                            <li>JSONファイルによるバックアップ・復元</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- トースト通知 -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
+        <div id="toast-inner"
+            class="opacity-0 translate-y-4 transition-all duration-300 bg-scripture-800 text-white px-5 py-3 rounded-xl shadow-lg text-sm max-w-xs text-center">
+            <span id="toast-msg"></span>
+        </div>
+    </div>
+
+    <!-- 確認モーダル -->
+    <div id="confirm-modal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4" style="display:none;">
+        <div class="modal-overlay absolute inset-0" onclick="closeConfirm(false)"></div>
+        <div class="relative glass-card rounded-2xl p-6 shadow-xl max-w-sm w-full mx-auto fade-in"
+            style="background:rgba(255,255,255,0.97);">
+            <div class="flex items-center gap-3 mb-3">
+                <div id="confirm-icon"
+                    class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                </div>
+                <h3 id="confirm-title" class="font-bold text-scripture-800 text-base">確認</h3>
+            </div>
+            <p id="confirm-message" class="text-sm text-scripture-600 mb-5 leading-relaxed"></p>
+            <div class="flex gap-3">
+                <button onclick="closeConfirm(false)"
+                    class="flex-1 py-2.5 rounded-xl text-sm font-medium border-2 border-scripture-200 text-scripture-600 hover:bg-scripture-50 transition-colors">キャンセル</button>
+                <button id="confirm-ok-btn" onclick="closeConfirm(true)"
+                    class="flex-1 py-2.5 rounded-xl text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors shadow-md">実行</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================
+        // 聖書データ (66書巻)
+        // ============================
+        const BIBLE_DATA = [
+            // ── 旧約聖書 (39書) ──
+            { id: 'gen', name: '創世記', abbr: '創', testament: 'old', chapters: [31, 25, 24, 26, 32, 22, 24, 22, 29, 32, 32, 20, 18, 24, 21, 16, 27, 33, 38, 18, 34, 24, 20, 67, 34, 35, 46, 22, 35, 43, 55, 32, 20, 31, 29, 43, 36, 30, 23, 23, 57, 38, 34, 34, 28, 34, 31, 22, 33, 26] },
+            { id: 'exo', name: '出エジプト記', abbr: '出', testament: 'old', chapters: [22, 25, 22, 31, 23, 30, 25, 32, 35, 29, 10, 51, 22, 31, 27, 36, 16, 27, 25, 26, 36, 31, 33, 18, 40, 37, 21, 43, 46, 38, 18, 35, 23, 35, 35, 38, 29, 31, 43, 38] },
+            { id: 'lev', name: 'レビ記', abbr: 'レビ', testament: 'old', chapters: [17, 16, 17, 35, 19, 30, 38, 36, 24, 20, 47, 8, 59, 57, 33, 34, 16, 30, 37, 27, 24, 33, 44, 23, 55, 46, 34] },
+            { id: 'num', name: '民数記', abbr: '民', testament: 'old', chapters: [54, 34, 51, 49, 31, 27, 89, 26, 23, 36, 35, 16, 33, 45, 41, 50, 13, 32, 22, 29, 35, 41, 30, 25, 18, 65, 23, 31, 40, 16, 54, 42, 56, 29, 34, 13] },
+            { id: 'deu', name: '申命記', abbr: '申', testament: 'old', chapters: [46, 37, 29, 49, 33, 25, 26, 20, 29, 22, 32, 32, 18, 29, 23, 22, 20, 22, 21, 20, 23, 30, 25, 22, 19, 19, 26, 68, 29, 20, 30, 52, 29, 12] },
+            { id: 'jos', name: 'ヨシュア記', abbr: 'ヨシュ', testament: 'old', chapters: [18, 24, 17, 24, 15, 27, 26, 35, 27, 43, 23, 24, 33, 15, 63, 10, 18, 28, 51, 9, 45, 34, 16, 33] },
+            { id: 'jdg', name: '士師記', abbr: '士', testament: 'old', chapters: [36, 23, 31, 24, 31, 40, 25, 35, 57, 18, 40, 15, 25, 20, 20, 31, 13, 31, 30, 48, 25] },
+            { id: 'rut', name: 'ルツ記', abbr: 'ルツ', testament: 'old', chapters: [22, 23, 18, 22] },
+            { id: '1sa', name: 'サムエル記第一', abbr: 'Iサム', testament: 'old', chapters: [28, 36, 21, 22, 12, 21, 17, 22, 27, 27, 15, 25, 23, 52, 35, 23, 58, 30, 24, 43, 15, 23, 28, 23, 44, 25, 12, 25, 11, 31, 13] },
+            { id: '2sa', name: 'サムエル記第二', abbr: 'IIサム', testament: 'old', chapters: [27, 32, 39, 12, 25, 23, 29, 18, 13, 19, 27, 31, 39, 33, 37, 23, 29, 33, 43, 26, 22, 51, 39, 25] },
+            { id: '1ki', name: '列王記第一', abbr: 'I列', testament: 'old', chapters: [53, 46, 28, 34, 18, 38, 51, 66, 28, 29, 43, 33, 34, 31, 34, 34, 24, 46, 21, 43, 29, 53] },
+            { id: '2ki', name: '列王記第二', abbr: 'II列', testament: 'old', chapters: [18, 25, 27, 44, 27, 33, 20, 29, 37, 36, 21, 21, 25, 29, 38, 20, 41, 37, 37, 21, 26, 20, 37, 20, 30] },
+            { id: '1ch', name: '歴代誌第一', abbr: 'I歴', testament: 'old', chapters: [54, 55, 24, 43, 26, 81, 40, 40, 44, 14, 47, 40, 14, 17, 29, 43, 27, 17, 19, 8, 30, 19, 32, 31, 31, 32, 34, 21, 30] },
+            { id: '2ch', name: '歴代誌第二', abbr: 'II歴', testament: 'old', chapters: [17, 18, 17, 22, 14, 42, 22, 18, 31, 19, 23, 16, 22, 15, 19, 14, 19, 34, 11, 37, 20, 12, 21, 27, 28, 23, 9, 27, 36, 27, 21, 33, 25, 33, 27, 23] },
+            { id: 'ezr', name: 'エズラ記', abbr: 'エズ', testament: 'old', chapters: [11, 70, 13, 24, 17, 22, 28, 36, 15, 44] },
+            { id: 'neh', name: 'ネヘミヤ記', abbr: 'ネヘ', testament: 'old', chapters: [11, 20, 32, 23, 19, 19, 73, 18, 38, 39, 36, 47, 31] },
+            { id: 'est', name: 'エステル記', abbr: 'エス', testament: 'old', chapters: [22, 23, 15, 17, 14, 14, 10, 17, 32, 3] },
+            { id: 'job', name: 'ヨブ記', abbr: 'ヨブ', testament: 'old', chapters: [22, 13, 26, 21, 27, 30, 21, 22, 35, 22, 20, 25, 28, 22, 35, 22, 16, 21, 29, 29, 34, 30, 17, 25, 6, 14, 23, 28, 25, 31, 40, 22, 33, 37, 16, 33, 24, 41, 30, 24, 34, 17] },
+            { id: 'psa', name: '詩篇', abbr: '詩', testament: 'old', chapters: [6, 12, 8, 8, 12, 10, 17, 9, 20, 18, 7, 8, 6, 7, 5, 11, 15, 50, 14, 9, 13, 31, 6, 10, 22, 12, 14, 9, 11, 12, 24, 11, 22, 22, 28, 12, 40, 22, 13, 17, 13, 11, 5, 26, 17, 11, 9, 14, 20, 23, 19, 9, 6, 7, 23, 13, 11, 11, 17, 12, 8, 12, 11, 10, 13, 20, 7, 35, 36, 5, 24, 20, 28, 23, 10, 12, 20, 72, 13, 19, 16, 8, 18, 12, 13, 17, 7, 18, 52, 17, 16, 15, 5, 23, 11, 13, 12, 9, 9, 5, 8, 28, 22, 35, 45, 48, 43, 13, 31, 7, 10, 10, 9, 8, 18, 19, 2, 29, 176, 7, 8, 9, 4, 8, 5, 6, 5, 6, 8, 8, 3, 18, 3, 3, 21, 26, 9, 8, 24, 13, 10, 7, 12, 15, 21, 10, 20, 14, 9, 6] },
+            { id: 'pro', name: '箴言', abbr: '箴', testament: 'old', chapters: [33, 22, 35, 27, 23, 35, 27, 36, 18, 32, 31, 28, 25, 35, 33, 33, 28, 24, 29, 30, 31, 29, 35, 34, 28, 28, 27, 28, 27, 33, 31] },
+            { id: 'ecc', name: '伝道者の書', abbr: '伝', testament: 'old', chapters: [18, 26, 22, 16, 20, 12, 29, 17, 18, 20, 10, 14] },
+            { id: 'sng', name: '雅歌', abbr: '雅', testament: 'old', chapters: [17, 17, 11, 16, 16, 13, 13, 14] },
+            { id: 'isa', name: 'イザヤ書', abbr: 'イザ', testament: 'old', chapters: [31, 22, 26, 6, 30, 13, 25, 22, 21, 34, 16, 6, 22, 32, 9, 14, 14, 7, 25, 6, 17, 25, 18, 23, 12, 21, 13, 29, 24, 33, 9, 20, 24, 17, 10, 22, 38, 22, 8, 31, 29, 25, 28, 28, 25, 13, 15, 22, 26, 11, 23, 15, 12, 17, 13, 12, 21, 14, 21, 22, 11, 12, 19, 12, 25, 24] },
+            { id: 'jer', name: 'エレミヤ書', abbr: 'エレ', testament: 'old', chapters: [19, 37, 25, 31, 31, 30, 34, 22, 26, 25, 23, 17, 27, 22, 21, 21, 27, 23, 15, 18, 14, 30, 40, 10, 38, 24, 22, 17, 32, 24, 40, 44, 26, 22, 19, 32, 21, 28, 18, 16, 18, 22, 13, 30, 5, 28, 7, 47, 39, 46, 64, 34] },
+            { id: 'lam', name: '哀歌', abbr: '哀', testament: 'old', chapters: [22, 22, 66, 22, 22] },
+            { id: 'ezk', name: 'エゼキエル書', abbr: 'エゼ', testament: 'old', chapters: [28, 10, 27, 17, 17, 14, 27, 18, 11, 22, 25, 28, 23, 23, 8, 63, 24, 32, 14, 49, 32, 31, 49, 27, 17, 21, 36, 26, 21, 26, 18, 32, 33, 31, 15, 38, 28, 23, 29, 49, 26, 20, 27, 31, 25, 24, 23, 35] },
+            { id: 'dan', name: 'ダニエル書', abbr: 'ダニ', testament: 'old', chapters: [21, 49, 30, 37, 31, 28, 28, 27, 27, 21, 45, 13] },
+            { id: 'hos', name: 'ホセア書', abbr: 'ホセ', testament: 'old', chapters: [11, 23, 5, 19, 15, 11, 16, 14, 17, 15, 12, 14, 16, 9] },
+            { id: 'jol', name: 'ヨエル書', abbr: 'ヨエ', testament: 'old', chapters: [20, 32, 21] },
+            { id: 'amo', name: 'アモス書', abbr: 'アモ', testament: 'old', chapters: [15, 16, 15, 13, 27, 14, 17, 14, 15] },
+            { id: 'oba', name: 'オバデヤ書', abbr: 'オバ', testament: 'old', chapters: [21] },
+            { id: 'jon', name: 'ヨナ書', abbr: 'ヨナ', testament: 'old', chapters: [17, 10, 10, 11] },
+            { id: 'mic', name: 'ミカ書', abbr: 'ミカ', testament: 'old', chapters: [16, 13, 12, 13, 15, 16, 20] },
+            { id: 'nah', name: 'ナホム書', abbr: 'ナホ', testament: 'old', chapters: [15, 13, 19] },
+            { id: 'hab', name: 'ハバクク書', abbr: 'ハバ', testament: 'old', chapters: [17, 20, 19] },
+            { id: 'zep', name: 'ゼパニヤ書', abbr: 'ゼパ', testament: 'old', chapters: [18, 15, 20] },
+            { id: 'hag', name: 'ハガイ書', abbr: 'ハガ', testament: 'old', chapters: [15, 23] },
+            { id: 'zec', name: 'ゼカリヤ書', abbr: 'ゼカ', testament: 'old', chapters: [21, 13, 10, 14, 11, 15, 14, 23, 17, 12, 17, 14, 9, 21] },
+            { id: 'mal', name: 'マラキ書', abbr: 'マラ', testament: 'old', chapters: [14, 17, 18, 6] },
+            // ── 新約聖書 (27書) ──
+            { id: 'mat', name: 'マタイの福音書', abbr: 'マタ', testament: 'new', chapters: [25, 23, 17, 25, 48, 34, 29, 34, 38, 42, 30, 50, 58, 36, 39, 28, 27, 35, 30, 34, 46, 46, 39, 51, 46, 75, 66, 20] },
+            { id: 'mrk', name: 'マルコの福音書', abbr: 'マル', testament: 'new', chapters: [45, 28, 35, 41, 43, 56, 37, 38, 50, 52, 33, 44, 37, 72, 47, 20] },
+            { id: 'luk', name: 'ルカの福音書', abbr: 'ルカ', testament: 'new', chapters: [80, 52, 38, 44, 39, 49, 50, 56, 62, 42, 54, 59, 35, 35, 32, 31, 37, 43, 48, 47, 38, 71, 56, 53] },
+            { id: 'jhn', name: 'ヨハネの福音書', abbr: 'ヨハ', testament: 'new', chapters: [51, 25, 36, 54, 47, 71, 53, 59, 41, 42, 57, 50, 38, 31, 27, 33, 26, 40, 42, 31, 25] },
+            { id: 'act', name: '使徒の働き', abbr: '使', testament: 'new', chapters: [26, 47, 26, 37, 42, 15, 60, 40, 43, 48, 30, 25, 52, 28, 41, 40, 34, 28, 41, 38, 40, 30, 35, 27, 27, 32, 44, 31] },
+            { id: 'rom', name: 'ローマ人への手紙', abbr: 'ロマ', testament: 'new', chapters: [32, 29, 31, 25, 21, 23, 25, 39, 33, 21, 36, 21, 14, 23, 33, 27] },
+            { id: '1co', name: 'コリント人への手紙第一', abbr: 'Iコリ', testament: 'new', chapters: [31, 16, 23, 21, 13, 20, 40, 13, 27, 33, 34, 31, 13, 40, 58, 24] },
+            { id: '2co', name: 'コリント人への手紙第二', abbr: 'IIコリ', testament: 'new', chapters: [24, 17, 18, 18, 21, 18, 16, 24, 15, 18, 33, 21, 14] },
+            { id: 'gal', name: 'ガラテヤ人への手紙', abbr: 'ガラ', testament: 'new', chapters: [24, 21, 29, 31, 26, 18] },
+            { id: 'eph', name: 'エペソ人への手紙', abbr: 'エペ', testament: 'new', chapters: [23, 22, 21, 32, 33, 24] },
+            { id: 'php', name: 'ピリピ人への手紙', abbr: 'ピリ', testament: 'new', chapters: [30, 30, 21, 23] },
+            { id: 'col', name: 'コロサイ人への手紙', abbr: 'コロ', testament: 'new', chapters: [29, 23, 25, 18] },
+            { id: '1th', name: 'テサロニケ人への手紙第一', abbr: 'Iテサ', testament: 'new', chapters: [10, 20, 13, 18, 28] },
+            { id: '2th', name: 'テサロニケ人への手紙第二', abbr: 'IIテサ', testament: 'new', chapters: [12, 17, 18] },
+            { id: '1ti', name: 'テモテへの手紙第一', abbr: 'Iテモ', testament: 'new', chapters: [20, 15, 16, 16, 25, 21] },
+            { id: '2ti', name: 'テモテへの手紙第二', abbr: 'IIテモ', testament: 'new', chapters: [18, 26, 17, 22] },
+            { id: 'tit', name: 'テトスへの手紙', abbr: 'テト', testament: 'new', chapters: [16, 15, 15] },
+            { id: 'phm', name: 'ピレモンへの手紙', abbr: 'ピレ', testament: 'new', chapters: [25] },
+            { id: 'heb', name: 'ヘブル人への手紙', abbr: 'ヘブ', testament: 'new', chapters: [14, 18, 19, 16, 14, 20, 28, 13, 28, 39, 40, 29, 25] },
+            { id: 'jas', name: 'ヤコブの手紙', abbr: 'ヤコ', testament: 'new', chapters: [27, 26, 18, 17, 20] },
+            { id: '1pe', name: 'ペテロの手紙第一', abbr: 'Iペテ', testament: 'new', chapters: [25, 25, 22, 19, 14] },
+            { id: '2pe', name: 'ペテロの手紙第二', abbr: 'IIペテ', testament: 'new', chapters: [21, 22, 18] },
+            { id: '1jn', name: 'ヨハネの手紙第一', abbr: 'Iヨハ', testament: 'new', chapters: [10, 29, 24, 21, 21] },
+            { id: '2jn', name: 'ヨハネの手紙第二', abbr: 'IIヨハ', testament: 'new', chapters: [13] },
+            { id: '3jn', name: 'ヨハネの手紙第三', abbr: 'IIIヨハ', testament: 'new', chapters: [14] },
+            { id: 'jud', name: 'ユダの手紙', abbr: 'ユダ', testament: 'new', chapters: [25] },
+            { id: 'rev', name: 'ヨハネの黙示録', abbr: '黙', testament: 'new', chapters: [20, 29, 22, 11, 14, 17, 17, 13, 21, 11, 19, 17, 18, 20, 8, 21, 18, 24, 21, 15, 27, 21] },
+        ];
+
+        function getBook(id) { return BIBLE_DATA.find(b => b.id === id); }
+        function bookVerses(b) { return b.chapters.reduce((s, v) => s + v, 0); }
+        function booksVerses(ids) { return ids.reduce((s, id) => { const b = getBook(id); return s + (b ? bookVerses(b) : 0); }, 0); }
+        function booksChapters(ids) { return ids.reduce((s, id) => { const b = getBook(id); return s + (b ? b.chapters.length : 0); }, 0); }
+
+        const STORAGE_KEY = 'bible-reader-data';
+
+        // ============================
+        // 状態管理
+        // ============================
+        let appState = {
+            plan: null,
+            completed: {},
+            completedDays: {},
+        };
+        let selectedBooks = ['act']; // デフォルト: 使徒の働き
+        let currentPeriodType = 'month';
+
+        // ============================
+        // ストレージ
+        // ============================
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    appState = data.appState || { plan: null, completed: {}, completedDays: {} };
+                    if (!appState.completed) appState.completed = {};
+                    if (!appState.completedDays) appState.completedDays = {};
+                    if (data.selectedBooks) selectedBooks = data.selectedBooks;
+                    // 旧形式互換
+                    if (appState.plan && appState.plan.schedule && appState.plan.schedule.length > 0 && !appState.plan.schedule[0].readings) {
+                        appState.plan = null;
+                        appState.completedDays = {};
+                    }
+                }
+                // 旧キー互換
+                const oldRaw = localStorage.getItem('acts-reader-data');
+                if (oldRaw && !raw) {
+                    const old = JSON.parse(oldRaw);
+                    appState = { plan: null, completed: old.completed || {}, completedDays: old.completedDays || {} };
+                    selectedBooks = ['act'];
+                    saveData();
+                }
+            } catch (e) { console.error('データの読み込みに失敗:', e); }
+        }
+
+        function saveData() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({ appState, selectedBooks }));
+            } catch (e) { console.error('データの保存に失敗:', e); }
+        }
+
+        // ============================
+        // タブ切り替え
+        // ============================
+        function switchTab(tab) {
+            ['plan', 'progress', 'settings'].forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                const content = document.getElementById('content-' + t);
+                if (t === tab) {
+                    btn.classList.add('tab-active'); btn.classList.remove('text-scripture-500');
+                    content.classList.remove('hidden'); content.classList.add('fade-in');
+                } else {
+                    btn.classList.remove('tab-active'); btn.classList.add('text-scripture-500');
+                    content.classList.add('hidden'); content.classList.remove('fade-in');
+                }
+            });
+            if (tab === 'progress') renderChapterList();
+            if (tab === 'plan') renderPlan();
+        }
+
+        // ============================
+        // 書巻選択
+        // ============================
+        function selectPreset(type) {
+            if (type === 'all') selectedBooks = BIBLE_DATA.map(b => b.id);
+            else if (type === 'old') selectedBooks = BIBLE_DATA.filter(b => b.testament === 'old').map(b => b.id);
+            else if (type === 'new') selectedBooks = BIBLE_DATA.filter(b => b.testament === 'new').map(b => b.id);
+            saveData();
+            renderBookSelector();
+            // テーマ復元
+            const savedTheme = localStorage.getItem('bible-reader-theme');
+            if (savedTheme) applyTheme(savedTheme); else renderThemeGrid();
+            // ファビコン復元
+            const savedFavicon = localStorage.getItem('bible-reader-favicon');
+            if (savedFavicon) { applyFavicon(savedFavicon); document.getElementById('favicon-input').value = savedFavicon; }
+            updatePreview();
+        }
+
+        function toggleBook(id) {
+            const idx = selectedBooks.indexOf(id);
+            if (idx >= 0) selectedBooks.splice(idx, 1);
+            else selectedBooks.push(id);
+            saveData();
+            renderBookSelector();
+            updatePreview();
+        }
+
+        function toggleTestament(testament) {
+            const ids = BIBLE_DATA.filter(b => b.testament === testament).map(b => b.id);
+            const allSelected = ids.every(id => selectedBooks.includes(id));
+            if (allSelected) {
+                selectedBooks = selectedBooks.filter(id => !ids.includes(id));
+            } else {
+                ids.forEach(id => { if (!selectedBooks.includes(id)) selectedBooks.push(id); });
+            }
+            saveData();
+            renderBookSelector();
+            updatePreview();
+        }
+
+        function renderBookSelector() {
+            // プリセットボタンのハイライト
+            const allOld = BIBLE_DATA.filter(b => b.testament === 'old').every(b => selectedBooks.includes(b.id));
+            const allNew = BIBLE_DATA.filter(b => b.testament === 'new').every(b => selectedBooks.includes(b.id));
+            const active = 'border-olive-500 bg-olive-50 text-olive-700 font-medium';
+            const inactive = 'border-scripture-200 text-scripture-600';
+            const pAll = document.getElementById('preset-all');
+            const pOld = document.getElementById('preset-old');
+            const pNew = document.getElementById('preset-new');
+            [pAll, pOld, pNew].forEach(el => { el.className = el.className.replace(/border-olive-500|bg-olive-50|text-olive-700|font-medium|border-scripture-200|text-scripture-600/g, '').trim(); });
+            pAll.classList.add(...(allOld && allNew ? active : inactive).split(' '));
+            pOld.classList.add(...(allOld && !allNew ? active : allOld ? active : inactive).split(' '));
+            pNew.classList.add(...(allNew && !allOld ? active : allNew ? active : inactive).split(' '));
+
+            // 選択情報
+            const totalV = booksVerses(selectedBooks);
+            const totalC = booksChapters(selectedBooks);
+            document.getElementById('selected-books-info').textContent =
+                selectedBooks.length > 0 ? `${selectedBooks.length}巻 / ${totalC}章 / ${totalV.toLocaleString()}節` : '書巻を選択してください';
+
+            // 個別選択リスト
+            const container = document.getElementById('book-selector-list');
+            container.innerHTML = '';
+            ['old', 'new'].forEach(testament => {
+                const books = BIBLE_DATA.filter(b => b.testament === testament);
+                const tAll = books.every(b => selectedBooks.includes(b.id));
+                const label = testament === 'old' ? '旧約聖書' : '新約聖書';
+                const section = document.createElement('div');
+                section.innerHTML = `
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="font-bold text-scripture-700">${label}</span>
+                        <button onclick="toggleTestament('${testament}')" class="text-olive-500 hover:text-olive-700 transition-colors">${tAll ? '全解除' : '全選択'}</button>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-1">
+                        ${books.map(b => {
+                    const checked = selectedBooks.includes(b.id);
+                    return `<label class="flex items-center gap-1.5 p-1 rounded cursor-pointer hover:bg-scripture-50 transition-colors ${checked ? 'text-olive-700' : 'text-scripture-500'}">
+                                <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleBook('${b.id}')" class="custom-check" style="width:16px;height:16px;">
+                                <span>${b.name}</span>
+                            </label>`;
+                }).join('')}
+                    </div>
+                `;
+                container.appendChild(section);
+            });
+        }
+
+        // ============================
+        // 期間タイプ変更
+        // ============================
+        function setPeriodType(type) {
+            currentPeriodType = type;
+            ['week', 'month', 'custom'].forEach(t => {
+                const btn = document.getElementById('pt-' + t);
+                const opt = document.getElementById('opt-' + t);
+                if (t === type) {
+                    btn.classList.add('border-olive-500', 'bg-olive-50', 'text-olive-700', 'font-medium');
+                    btn.classList.remove('border-scripture-200', 'text-scripture-600');
+                    if (opt) opt.classList.remove('hidden');
+                } else {
+                    btn.classList.remove('border-olive-500', 'bg-olive-50', 'text-olive-700', 'font-medium');
+                    btn.classList.add('border-scripture-200', 'text-scripture-600');
+                    if (opt) opt.classList.add('hidden');
+                }
+            });
+            updatePreview();
+        }
+
+        // ============================
+        // プレビュー
+        // ============================
+        function getPlannedDays() {
+            const startStr = document.getElementById('sel-startdate').value;
+            if (!startStr) return null;
+            const start = new Date(startStr); let end;
+            if (currentPeriodType === 'week') {
+                end = new Date(start); end.setDate(end.getDate() + parseInt(document.getElementById('sel-weeks').value) * 7 - 1);
+            } else if (currentPeriodType === 'month') {
+                end = new Date(start); end.setMonth(end.getMonth() + parseInt(document.getElementById('sel-months').value)); end.setDate(end.getDate() - 1);
+            } else {
+                const endStr = document.getElementById('sel-enddate').value; if (!endStr) return null; end = new Date(endStr);
+            }
+            if (end <= start) return null;
+            return { start, end, days: Math.ceil((end - start) / 86400000) + 1 };
+        }
+
+        function updatePreview() {
+            const info = getPlannedDays();
+            const el = document.getElementById('preview-text');
+            if (!info || selectedBooks.length === 0) {
+                el.textContent = selectedBooks.length === 0 ? '書巻を選択してください' : '期間を選択してプレビューを確認してください';
+                return;
+            }
+            const totalV = booksVerses(selectedBooks);
+            const vpd = Math.round(totalV / info.days);
+            el.innerHTML = `<strong>${info.days}日間</strong>で読了<br>
+                ${selectedBooks.length}巻 / ${totalV.toLocaleString()}節<br>
+                1日あたり約 <strong>${vpd}節</strong><br>
+                <span class="text-xs text-scripture-400">${formatDate(info.start)} ～ ${formatDate(info.end)}</span>`;
+        }
+
+        // ============================
+        // 読み進め方式
+        // ============================
+        let readingMode = 'sequential'; // 'sequential' or 'parallel'
+
+        function setReadingMode(mode) {
+            readingMode = mode;
+            const seqBtn = document.getElementById('rm-sequential');
+            const parBtn = document.getElementById('rm-parallel');
+            const active = 'border-olive-500 bg-olive-50 text-olive-700 font-medium';
+            const inactive = 'border-scripture-200 text-scripture-600';
+            [seqBtn, parBtn].forEach(el => {
+                el.className = el.className.replace(/border-olive-500|bg-olive-50|text-olive-700|font-medium|border-scripture-200|text-scripture-600/g, '').trim();
+            });
+            seqBtn.classList.add(...(mode === 'sequential' ? active : inactive).split(' '));
+            parBtn.classList.add(...(mode === 'parallel' ? active : inactive).split(' '));
+        }
+
+        // ============================
+        // プラン作成（節レベル均等配分）
+        // ============================
+        function createPlan() {
+            if (selectedBooks.length === 0) { showToast('書巻を選択してください'); return; }
+            const info = getPlannedDays();
+            if (!info) { showToast('期間を正しく設定してください'); return; }
+
+            let schedule;
+            if (readingMode === 'parallel' && selectedBooks.length > 1) {
+                schedule = createParallelSchedule(info);
+            } else {
+                schedule = createSequentialSchedule(info);
+            }
+
+            appState.plan = {
+                startDate: formatDateISO(info.start), endDate: formatDateISO(info.end),
+                periodType: currentPeriodType, books: [...selectedBooks], schedule,
+                readingMode: readingMode,
+                periodValue: currentPeriodType === 'week' ? document.getElementById('sel-weeks').value
+                    : currentPeriodType === 'month' ? document.getElementById('sel-months').value
+                        : document.getElementById('sel-enddate').value,
+            };
+            appState.completedDays = {};
+            saveData(); renderPlan();
+            showToast('通読プランを作成しました！');
+        }
+
+        // 順番読みモード（従来のアルゴリズム）
+        function createSequentialSchedule(info) {
+            const allChapters = [];
+            selectedBooks.forEach(id => {
+                const book = getBook(id);
+                if (book) book.chapters.forEach((v, i) => allChapters.push({ bookId: id, ch: i + 1, verses: v }));
+            });
+            const totalVerses = allChapters.reduce((s, c) => s + c.verses, 0);
+            const versesPerDay = totalVerses / info.days;
+            const schedule = [];
+            let chIdx = 0, vOffset = 0, totalAssigned = 0;
+            for (let d = 0; d < info.days; d++) {
+                const date = new Date(info.start); date.setDate(date.getDate() + d);
+                const dayStr = formatDateISO(date);
+                let targetForDay = d === info.days - 1 ? totalVerses - totalAssigned : Math.round((d + 1) * versesPerDay) - totalAssigned;
+                if (targetForDay < 1) targetForDay = 1;
+                const readings = []; let dayVerses = 0;
+                while (dayVerses < targetForDay && chIdx < allChapters.length) {
+                    const chapter = allChapters[chIdx];
+                    const available = chapter.verses - vOffset;
+                    const needed = targetForDay - dayVerses;
+                    if (available <= needed) {
+                        readings.push({ bookId: chapter.bookId, ch: chapter.ch, from: vOffset + 1, to: chapter.verses });
+                        dayVerses += available; chIdx++; vOffset = 0;
+                    } else {
+                        readings.push({ bookId: chapter.bookId, ch: chapter.ch, from: vOffset + 1, to: vOffset + needed });
+                        vOffset += needed; dayVerses += needed;
+                    }
+                }
+                totalAssigned += dayVerses;
+                if (readings.length > 0) schedule.push({ date: dayStr, readings, verseCount: dayVerses });
+            }
+            return schedule;
+        }
+
+        // 同時進行モード（各書巻を並行して読む）
+        function createParallelSchedule(info) {
+            // 各書巻のチャプターを個別にトラッキング
+            const bookStates = selectedBooks.map(id => {
+                const book = getBook(id);
+                if (!book) return null;
+                const chapters = book.chapters.map((v, i) => ({ bookId: id, ch: i + 1, verses: v }));
+                const totalV = book.chapters.reduce((s, v) => s + v, 0);
+                return { bookId: id, chapters, totalV, chIdx: 0, vOffset: 0, assigned: 0, vpd: totalV / info.days };
+            }).filter(Boolean);
+
+            const schedule = [];
+            for (let d = 0; d < info.days; d++) {
+                const date = new Date(info.start); date.setDate(date.getDate() + d);
+                const dayStr = formatDateISO(date);
+                const readings = []; let dayVerses = 0;
+
+                bookStates.forEach(bs => {
+                    if (bs.chIdx >= bs.chapters.length) return;
+                    let target = d === info.days - 1 ? bs.totalV - bs.assigned : Math.round((d + 1) * bs.vpd) - bs.assigned;
+                    if (target < 1) target = 1;
+                    let bv = 0;
+                    while (bv < target && bs.chIdx < bs.chapters.length) {
+                        const ch = bs.chapters[bs.chIdx];
+                        const avail = ch.verses - bs.vOffset;
+                        const need = target - bv;
+                        if (avail <= need) {
+                            readings.push({ bookId: ch.bookId, ch: ch.ch, from: bs.vOffset + 1, to: ch.verses });
+                            bv += avail; bs.chIdx++; bs.vOffset = 0;
+                        } else {
+                            readings.push({ bookId: ch.bookId, ch: ch.ch, from: bs.vOffset + 1, to: bs.vOffset + need });
+                            bs.vOffset += need; bv += need;
+                        }
+                    }
+                    bs.assigned += bv;
+                    dayVerses += bv;
+                });
+
+                if (readings.length > 0) schedule.push({ date: dayStr, readings, verseCount: dayVerses });
+            }
+            return schedule;
+        }
+
+        function deletePlan() {
+            showConfirm('プランの削除', 'プランを削除しますか？', '削除する', () => {
+                appState.plan = null; appState.completedDays = {};
+                saveData(); renderPlan(); showToast('プランを削除しました');
+            });
+        }
+
+        // ============================
+        // 読書範囲のフォーマット
+        // ============================
+        function fmtRange(r) {
+            const book = getBook(r.bookId);
+            const abbr = book ? book.abbr : '?';
+            const isFullCh = r.from === 1 && r.to === (book ? book.chapters[r.ch - 1] : r.to);
+            if (isFullCh) return `${abbr} ${r.ch}章`;
+            return `${abbr} ${r.ch}:${r.from}-${r.to}`;
+        }
+
+        function fmtRangeDetail(r) {
+            const book = getBook(r.bookId);
+            const isFullCh = r.from === 1 && r.to === (book ? book.chapters[r.ch - 1] : r.to);
+            const name = book ? book.name : '?';
+            if (isFullCh) return `${name} 第${r.ch}章（全${r.to}節）`;
+            return `${name} ${r.ch}:${r.from}〜${r.to}`;
+        }
+
+        // ============================
+        // プラン表示
+        // ============================
+        function renderPlan() {
+            const summary = document.getElementById('plan-summary');
+            const todayReading = document.getElementById('today-reading');
+            const scheduleList = document.getElementById('schedule-list');
+            const planForm = document.getElementById('plan-form');
+
+            if (!appState.plan) {
+                summary.classList.add('hidden'); todayReading.classList.add('hidden'); scheduleList.classList.add('hidden');
+                planForm.classList.remove('hidden'); return;
+            }
+            planForm.classList.add('hidden'); summary.classList.remove('hidden'); scheduleList.classList.remove('hidden');
+            const plan = appState.plan;
+            const totalV = plan.schedule.reduce((s, d) => s + d.verseCount, 0);
+            const completedV = getCompletedVerseCount();
+            const rate = Math.round((completedV / totalV) * 100);
+
+            document.getElementById('plan-period').textContent = `${formatDateShort(plan.startDate)} ～ ${formatDateShort(plan.endDate)}`;
+            document.getElementById('plan-days').textContent = plan.schedule.length + '日';
+            document.getElementById('plan-per-day').textContent = `約${Math.round(totalV / plan.schedule.length)}節`;
+            document.getElementById('plan-rate').textContent = rate + '%';
+            document.getElementById('plan-progress-bar').style.width = rate + '%';
+
+            // 今日の読書
+            const todayStr = formatDateISO(new Date());
+            const todayEntry = plan.schedule.find(s => s.date === todayStr);
+            if (todayEntry) {
+                todayReading.classList.remove('hidden');
+                document.getElementById('today-date').textContent = formatDateJP(todayStr);
+                const todayDone = !!appState.completedDays[todayStr];
+                const container = document.getElementById('today-chapters');
+                container.innerHTML = '';
+                const wrapper = document.createElement('div');
+                wrapper.className = `flex items-start gap-3 p-3 rounded-xl transition-all ${todayDone ? 'bg-olive-100/50' : 'bg-white/60'}`;
+                const readingsHtml = todayEntry.readings.map(r =>
+                    `<div class="flex items-center gap-2">
+                        <span class="text-sm font-medium ${todayDone ? 'text-olive-600 line-through' : 'text-scripture-800'}">${fmtRangeDetail(r)}</span>
+                        <span class="text-xs text-scripture-400">${r.to - r.from + 1}節</span>
+                    </div>`
+                ).join('');
+                wrapper.innerHTML = `
+                    <input type="checkbox" class="custom-check mt-0.5" ${todayDone ? 'checked' : ''} onchange="toggleDay('${todayStr}'); renderPlan();">
+                    <div class="flex-1 min-w-0 space-y-1">${readingsHtml}
+                        <p class="text-xs text-scripture-500">${todayEntry.verseCount}節</p>
+                    </div>`;
+                container.appendChild(wrapper);
+            } else { todayReading.classList.add('hidden'); }
+
+            // スケジュール一覧 (月別アコーディオン)
+            const cardsEl = document.getElementById('schedule-cards');
+            cardsEl.innerHTML = '';
+            const monthGroups = {};
+            plan.schedule.forEach(entry => {
+                const d = new Date(entry.date);
+                const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                if (!monthGroups[mk]) monthGroups[mk] = [];
+                monthGroups[mk].push(entry);
+            });
+            const cmk = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+            Object.keys(monthGroups).sort().forEach(mk => {
+                const entries = monthGroups[mk];
+                const [y, m] = mk.split('-');
+                const doneCount = entries.filter(e => !!appState.completedDays[e.date]).length;
+                const doneV = entries.filter(e => !!appState.completedDays[e.date]).reduce((s, e) => s + e.verseCount, 0);
+                const totV = entries.reduce((s, e) => s + e.verseCount, 0);
+                const pct = Math.round((doneV / totV) * 100);
+                const details = document.createElement('details');
+                details.className = 'month-group glass-card rounded-2xl overflow-hidden shadow-sm';
+                if (mk === cmk) details.open = true;
+                const summary = document.createElement('summary');
+                summary.className = 'flex items-center justify-between p-4 hover:bg-scripture-50/50 transition-colors';
+                summary.innerHTML = `<div class="flex items-center gap-2">
+                    <svg class="chevron flex-shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    <span class="text-sm font-bold text-scripture-700">${parseInt(y)}年${parseInt(m)}月</span>
+                    <span class="text-xs text-scripture-400">${entries.length}日</span>
+                </div><div class="flex items-center gap-3">
+                    <div class="w-20 h-1.5 bg-scripture-100 rounded-full overflow-hidden"><div class="progress-bar h-full rounded-full" style="width:${pct}%"></div></div>
+                    <span class="text-xs font-medium ${pct >= 100 ? 'text-olive-500' : 'text-scripture-400'}">${doneCount}/${entries.length}</span>
+                </div>`;
+                details.appendChild(summary);
+                const content = document.createElement('div');
+                content.className = 'px-4 pb-3 space-y-1.5';
+                entries.forEach(entry => {
+                    const dayDone = !!appState.completedDays[entry.date];
+                    const isToday = entry.date === todayStr;
+                    const isPast = entry.date < todayStr;
+                    const card = document.createElement('div');
+                    card.className = `day-card rounded-xl p-3 cursor-pointer border transition-all ${dayDone ? 'completed border-olive-200' : 'border-transparent hover:border-scripture-200'} ${isToday ? 'ring-2 ring-olive-300' : ''}`;
+                    card.onclick = () => { toggleDay(entry.date); renderPlan(); };
+                    const labels = entry.readings.map(r => {
+                        const label = fmtRange(r);
+                        return `<span class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-lg ${dayDone ? 'bg-olive-100 text-olive-600' : 'bg-scripture-100 text-scripture-500'}">
+                            ${dayDone ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}${label}</span>`;
+                    }).join(' ');
+                    card.innerHTML = `<div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-medium ${isToday ? 'text-olive-500' : isPast ? 'text-scripture-300' : 'text-scripture-500'}">${isToday ? '📖 今日' : ''} ${formatDateJP(entry.date)}</span>
+                        <span class="text-xs text-scripture-300">${entry.verseCount}節</span>
+                    </div><div class="flex flex-wrap gap-1">${labels}</div>`;
+                    content.appendChild(card);
+                });
+                details.appendChild(content);
+                cardsEl.appendChild(details);
+            });
+        }
+
+        // ============================
+        // 進捗切り替え
+        // ============================
+        function toggleDay(dateStr) {
+            if (!appState.completedDays) appState.completedDays = {};
+            if (appState.completedDays[dateStr]) delete appState.completedDays[dateStr];
+            else appState.completedDays[dateStr] = true;
+            saveData(); updateStats();
+        }
+
+        function toggleChapter(bookId, ch) {
+            const key = bookId + ':' + ch;
+            if (appState.completed[key]) delete appState.completed[key];
+            else appState.completed[key] = true;
+            saveData(); updateStats();
+        }
+
+        // ============================
+        // 章の進捗リスト（進捗タブ）
+        // ============================
+        function renderChapterList() {
+            const container = document.getElementById('chapter-list');
+            container.innerHTML = '';
+            const hasPlan = !!appState.plan;
+            const books = hasPlan ? (appState.plan.books || ['act']) : selectedBooks;
+
+            books.forEach(bookId => {
+                const book = getBook(bookId);
+                if (!book) return;
+                const totalV = bookVerses(book);
+                let readV = 0;
+                if (hasPlan) {
+                    appState.plan.schedule.forEach(day => {
+                        if (!appState.completedDays[day.date]) return;
+                        day.readings.forEach(r => { if (r.bookId === bookId) readV += (r.to - r.from + 1); });
+                    });
+                } else {
+                    book.chapters.forEach((v, i) => { if (appState.completed[bookId + ':' + (i + 1)]) readV += v; });
+                }
+                readV = Math.min(readV, totalV);
+                const pct = Math.round((readV / totalV) * 100);
+                const isDone = pct >= 100;
+
+                const details = document.createElement('details');
+                details.className = 'month-group rounded-xl overflow-hidden';
+                const summary = document.createElement('summary');
+                summary.className = `flex items-center justify-between p-3 hover:bg-scripture-50/30 transition-colors rounded-xl ${isDone ? 'bg-olive-50/50' : ''}`;
+                summary.innerHTML = `<div class="flex items-center gap-2">
+                    <svg class="chevron flex-shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    <span class="text-sm font-medium ${isDone ? 'text-olive-600' : 'text-scripture-700'}">${book.name}</span>
+                    <span class="text-xs text-scripture-400">${book.chapters.length}章</span>
+                    ${isDone ? '<span class="text-xs text-olive-500">✓</span>' : ''}
+                </div><div class="flex items-center gap-2">
+                    <div class="w-16 h-1.5 bg-scripture-100 rounded-full overflow-hidden"><div class="progress-bar h-full rounded-full" style="width:${pct}%"></div></div>
+                    <span class="text-xs font-medium ${isDone ? 'text-olive-500' : 'text-scripture-400'}">${readV}/${totalV}</span>
+                </div>`;
+                details.appendChild(summary);
+
+                const content = document.createElement('div');
+                content.className = 'pl-6 pr-3 pb-2 space-y-0.5';
+                book.chapters.forEach((verses, i) => {
+                    const ch = i + 1;
+                    let chRead = 0;
+                    if (hasPlan) {
+                        appState.plan.schedule.forEach(day => {
+                            if (!appState.completedDays[day.date]) return;
+                            day.readings.forEach(r => { if (r.bookId === bookId && r.ch === ch) chRead += (r.to - r.from + 1); });
+                        });
+                    } else {
+                        chRead = appState.completed[bookId + ':' + ch] ? verses : 0;
+                    }
+                    chRead = Math.min(chRead, verses);
+                    const chDone = chRead >= verses;
+                    const div = document.createElement('div');
+                    if (hasPlan) {
+                        const chPct = Math.round((chRead / verses) * 100);
+                        div.className = `flex items-center gap-2 py-1 ${chDone ? 'text-olive-500' : 'text-scripture-500'}`;
+                        div.innerHTML = `<span class="text-xs w-12">${ch}章</span>
+                            <div class="flex-1 h-1 bg-scripture-100 rounded-full overflow-hidden"><div class="progress-bar h-full rounded-full" style="width:${chPct}%"></div></div>
+                            <span class="text-xs w-14 text-right">${chRead}/${verses}</span>`;
+                    } else {
+                        div.className = `flex items-center gap-2 py-1 cursor-pointer hover:bg-scripture-50 rounded-lg px-1 ${chDone ? 'text-olive-500' : 'text-scripture-500'}`;
+                        div.onclick = () => { toggleChapter(bookId, ch); renderChapterList(); };
+                        div.innerHTML = `<input type="checkbox" class="custom-check" style="width:16px;height:16px;" ${chDone ? 'checked' : ''} onclick="event.stopPropagation();" onchange="toggleChapter('${bookId}',${ch}); renderChapterList();">
+                            <span class="text-xs flex-1">${ch}章</span>
+                            <span class="text-xs text-scripture-400">${verses}節</span>`;
+                    }
+                    content.appendChild(div);
+                });
+                details.appendChild(content);
+                container.appendChild(details);
+            });
+            updateStats();
+        }
+
+        // ============================
+        // 全完了・全解除
+        // ============================
+        function checkAll() {
+            if (appState.plan) {
+                appState.plan.schedule.forEach(day => { appState.completedDays[day.date] = true; });
+            } else {
+                selectedBooks.forEach(id => {
+                    const book = getBook(id);
+                    if (book) book.chapters.forEach((_, i) => { appState.completed[id + ':' + (i + 1)] = true; });
+                });
+            }
+            saveData(); renderChapterList(); if (appState.plan) renderPlan();
+            showToast('全項目を完了にしました');
+        }
+
+        function uncheckAll() {
+            showConfirm('全チェック解除', 'すべてのチェックを外しますか？', '解除する', () => {
+                if (appState.plan) appState.completedDays = {};
+                else appState.completed = {};
+                saveData(); renderChapterList(); if (appState.plan) renderPlan();
+                showToast('チェックをすべて外しました');
+            });
+        }
+
+        // ============================
+        // 統計計算
+        // ============================
+        function getCompletedVerseCount() {
+            if (appState.plan) {
+                let t = 0;
+                appState.plan.schedule.forEach(day => { if (appState.completedDays && appState.completedDays[day.date]) t += day.verseCount; });
+                return t;
+            }
+            let t = 0;
+            selectedBooks.forEach(id => {
+                const book = getBook(id);
+                if (book) book.chapters.forEach((v, i) => { if (appState.completed[id + ':' + (i + 1)]) t += v; });
+            });
+            return t;
+        }
+
+        function getCompletedChapterCount() {
+            if (appState.plan) {
+                let count = 0;
+                const planBooks = appState.plan.books || [];
+                planBooks.forEach(bookId => {
+                    const book = getBook(bookId);
+                    if (!book) return;
+                    book.chapters.forEach((verses, i) => {
+                        let read = 0;
+                        appState.plan.schedule.forEach(day => {
+                            if (!appState.completedDays[day.date]) return;
+                            day.readings.forEach(r => { if (r.bookId === bookId && r.ch === i + 1) read += (r.to - r.from + 1); });
+                        });
+                        if (read >= verses) count++;
+                    });
+                });
+                return count;
+            }
+            return Object.values(appState.completed).filter(Boolean).length;
+        }
+
+        function getTotalChapterCount() {
+            if (appState.plan) return booksChapters(appState.plan.books || []);
+            return booksChapters(selectedBooks);
+        }
+
+        function getTotalVerseCount() {
+            if (appState.plan) return appState.plan.schedule.reduce((s, d) => s + d.verseCount, 0);
+            return booksVerses(selectedBooks);
+        }
+
+        function updateStats() {
+            const doneV = getCompletedVerseCount();
+            const doneCh = getCompletedChapterCount();
+            const totalCh = getTotalChapterCount();
+            const totalV = getTotalVerseCount();
+            const rate = totalV > 0 ? Math.round((doneV / totalV) * 100) : 0;
+            document.getElementById('total-progress-bar').style.width = rate + '%';
+            document.getElementById('total-progress-text').textContent = rate + '%';
+            document.getElementById('stat-done').textContent = doneCh;
+            document.getElementById('stat-remaining').textContent = totalCh - doneCh;
+            document.getElementById('stat-verses').textContent = doneV;
+            document.getElementById('stat-total-verses').textContent = '/ ' + totalV.toLocaleString();
+        }
+
+        // ============================
+        // バックアップ・復元
+        // ============================
+        function exportData() {
+            const data = JSON.stringify({ appState, selectedBooks }, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url;
+            a.download = `bible-reader-backup-${formatDateISO(new Date())}.json`;
+            a.click(); URL.revokeObjectURL(url);
+            showToast('バックアップをダウンロードしました');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    showConfirm('データの復元', '現在のデータを上書きして復元しますか？', '復元する', () => {
+                        if (data.appState) { appState = data.appState; } else { appState = data; }
+                        if (!appState.completed) appState.completed = {};
+                        if (!appState.completedDays) appState.completedDays = {};
+                        if (data.selectedBooks) selectedBooks = data.selectedBooks;
+                        saveData(); renderBookSelector(); renderPlan(); renderChapterList();
+                        showToast('データを復元しました');
+                    });
+                } catch (err) { showToast('ファイルの読み込みに失敗しました'); console.error(err); }
+            };
+            reader.readAsText(file); event.target.value = '';
+        }
+
+        function clearAllData() {
+            showConfirm('データの初期化', 'すべてのデータを削除しますか？\nこの操作は取り消せません。', 'すべて削除', () => {
+                appState = { plan: null, completed: {}, completedDays: {} };
+                selectedBooks = ['act'];
+                saveData(); renderBookSelector(); renderPlan(); renderChapterList();
+                showToast('すべてのデータを削除しました');
+            });
+        }
+
+        // ============================
+        // ユーティリティ
+        // ============================
+        function formatDate(date) { const d = typeof date === 'string' ? new Date(date) : date; return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`; }
+        function formatDateISO(date) { const d = typeof date === 'string' ? new Date(date) : date; return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+        function formatDateShort(ds) { const d = new Date(ds); return `${d.getMonth() + 1}/${d.getDate()}`; }
+        function formatDateJP(ds) { const d = new Date(ds); const days = ['日', '月', '火', '水', '木', '金', '土']; return `${d.getMonth() + 1}月${d.getDate()}日（${days[d.getDay()]}）`; }
+
+        function showToast(msg) {
+            const inner = document.getElementById('toast-inner');
+            document.getElementById('toast-msg').textContent = msg;
+            inner.classList.remove('opacity-0', 'translate-y-4');
+            inner.classList.add('opacity-100', 'translate-y-0');
+            setTimeout(() => { inner.classList.add('opacity-0', 'translate-y-4'); inner.classList.remove('opacity-100', 'translate-y-0'); }, 2500);
+        }
+
+        // ============================
+        // カスタム確認モーダル
+        // ============================
+        let _confirmCallback = null;
+        function showConfirm(title, message, okLabel, onConfirm) {
+            _confirmCallback = onConfirm;
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            document.getElementById('confirm-ok-btn').textContent = okLabel || '実行';
+            const modal = document.getElementById('confirm-modal');
+            modal.style.display = 'flex'; modal.classList.remove('hidden');
+        }
+        function closeConfirm(result) {
+            const modal = document.getElementById('confirm-modal');
+            modal.style.display = 'none'; modal.classList.add('hidden');
+            if (result && typeof _confirmCallback === 'function') _confirmCallback();
+            _confirmCallback = null;
+        }
+
+
+        // ============================
+        // テーマカラーシステム
+        // ============================
+        const THEMES = [
+            { id: 'forest', name: 'フォレスト', emoji: '🌲', hue: 137 },
+            { id: 'sky', name: 'スカイ', emoji: '☁️', hue: 205 },
+            { id: 'ocean', name: 'オーシャン', emoji: '🌊', hue: 215 },
+            { id: 'cobalt', name: 'コバルト', emoji: '💎', hue: 230 },
+            { id: 'indigo', name: 'インディゴ', emoji: '🔮', hue: 245 },
+            { id: 'lavender', name: 'ラベンダー', emoji: '💜', hue: 270 },
+            { id: 'plum', name: 'プラム', emoji: '🍇', hue: 290 },
+            { id: 'rose', name: 'ローズ', emoji: '🌹', hue: 340 },
+            { id: 'crimson', name: 'クリムゾン', emoji: '❤️', hue: 350 },
+            { id: 'coral', name: 'コーラル', emoji: '🪸', hue: 12 },
+            { id: 'sunset', name: 'サンセット', emoji: '🌅', hue: 22 },
+            { id: 'amber', name: 'アンバー', emoji: '🍯', hue: 35 },
+            { id: 'gold', name: 'ゴールド', emoji: '✨', hue: 45 },
+            { id: 'olive', name: 'オリーブ', emoji: '🫒', hue: 80 },
+            { id: 'sage', name: 'セージ', emoji: '🌿', hue: 110 },
+            { id: 'emerald', name: 'エメラルド', emoji: '💚', hue: 155 },
+            { id: 'teal', name: 'ティール', emoji: '🦋', hue: 175 },
+            { id: 'mint', name: 'ミント', emoji: '🍃', hue: 165 },
+            { id: 'steel', name: 'スチール', emoji: '⚙️', hue: 210 },
+            { id: 'wine', name: 'ワイン', emoji: '🍷', hue: 330 },
+        
+            { id: 'tangerine', name: 'タンジェリン', hue: 18 },
+            { id: 'marigold', name: 'マリーゴールド', hue: 40 },
+            { id: 'butter', name: 'バター', hue: 50 },
+            { id: 'lemon', name: 'レモン', hue: 56 },
+            { id: 'peach', name: 'ピーチ', hue: 15 },
+];
+        let currentTheme = 'forest';
+
+        function applyTheme(id) {
+            var theme = THEMES.find(function (t) { return t.id === id; });
+            if (!theme) return;
+            currentTheme = id;
+            var hu = theme.hue;
+            var r = document.documentElement.style;
+            r.setProperty('--c50', 'hsl(' + hu + ', 30%, 96%)');
+            r.setProperty('--c100', 'hsl(' + hu + ', 35%, 90%)');
+            r.setProperty('--c200', 'hsl(' + hu + ', 35%, 82%)');
+            r.setProperty('--c300', 'hsl(' + hu + ', 35%, 70%)');
+            r.setProperty('--c400', 'hsl(' + hu + ', 35%, 58%)');
+            r.setProperty('--c500', 'hsl(' + hu + ', 35%, 47%)');
+            r.setProperty('--c600', 'hsl(' + hu + ', 38%, 39%)');
+            r.setProperty('--c700', 'hsl(' + hu + ', 36%, 32%)');
+            r.setProperty('--c800', 'hsl(' + hu + ', 34%, 26%)');
+            r.setProperty('--c900', 'hsl(' + hu + ', 32%, 22%)');
+            localStorage.setItem('bible-reader-theme', id);
+            renderThemeGrid();
+        }
+
+        function renderThemeGrid() {
+            const grid = document.getElementById('theme-grid');
+            if (!grid) return;
+            let html = '';
+            THEMES.forEach(function (t) {
+                const active = t.id === currentTheme;
+                const bgColor = 'hsl(' + t.hue + ', 35%, 47%)';
+                const borderCls = active ? 'border-scripture-700 bg-scripture-50 shadow-sm' : 'border-transparent hover:border-scripture-200';
+                html += '<button onclick="applyTheme(\'' + t.id + '\')" class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all ' + borderCls + '" title="' + t.name + '">'
+                    + '<div class="w-7 h-7 rounded-full" style="background:' + bgColor + ';"></div>'
+                    + '<span class="text-[10px] text-scripture-600">' + t.name + '</span>'
+                    + '</button>';
+            });
+            grid.innerHTML = html;
+        }
+
+        // ============================
+        // ファビコン設定
+        // ============================
+        function setFavicon() {
+            const val = document.getElementById('favicon-input').value.trim();
+            if (!val) { showToast('URLまたはBase64を入力してください'); return; }
+            applyFavicon(val);
+            localStorage.setItem('bible-reader-favicon', val);
+            showToast('ファビコンを設定しました');
+        }
+
+        function loadFaviconFile(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = e.target.result;
+                document.getElementById('favicon-input').value = data;
+                applyFavicon(data);
+                localStorage.setItem('bible-reader-favicon', data);
+                showToast('ファビコンを設定しました');
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        function clearFavicon() {
+            document.getElementById('favicon-input').value = '';
+            const link = document.getElementById('favicon-link');
+            link.href = '';
+            document.getElementById('favicon-preview').classList.add('hidden');
+            localStorage.removeItem('bible-reader-favicon');
+            showToast('ファビコンをクリアしました');
+        }
+
+        function applyFavicon(url) {
+            const link = document.getElementById('favicon-link');
+            link.href = url;
+            const prev = document.getElementById('favicon-preview');
+            const img = document.getElementById('favicon-preview-img');
+            img.src = url;
+            prev.classList.remove('hidden');
+        }
+
+        // ============================
+        // 初期化
+        // ============================
+        function init() {
+            loadData();
+            document.getElementById('sel-startdate').value = formatDateISO(new Date());
+            const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('sel-enddate').min = formatDateISO(tomorrow);
+            document.getElementById('sel-weeks').addEventListener('change', updatePreview);
+            document.getElementById('sel-months').addEventListener('change', updatePreview);
+            document.getElementById('sel-enddate').addEventListener('change', updatePreview);
+            document.getElementById('sel-startdate').addEventListener('change', updatePreview);
+            renderBookSelector();
+            setPeriodType('month');
+            updatePreview();
+            renderPlan();
+            renderChapterList();
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+
+</body>
+
+</html>
