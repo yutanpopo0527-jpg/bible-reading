@@ -80,25 +80,81 @@
         .theme-stroke {
             stroke: var(--c500);
         }
+
         /* Tailwind olive テーマカラーオーバーライド */
-        .bg-olive-50 { background-color: var(--c50) !important; }
-        .bg-olive-100 { background-color: var(--c100) !important; }
-        .text-olive-500 { color: var(--c500) !important; }
-        .text-olive-600 { color: var(--c600) !important; }
-        .text-olive-700 { color: var(--c700) !important; }
-        .border-olive-200 { border-color: var(--c200) !important; }
-        .border-olive-300 { border-color: var(--c300) !important; }
-        .border-olive-400 { border-color: var(--c400) !important; }
-        .border-olive-500 { border-color: var(--c500) !important; }
-        .from-olive-400 { --tw-gradient-from: var(--c400) !important; --tw-gradient-to: transparent !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-        .to-olive-600 { --tw-gradient-to: var(--c600) !important; }
-        .ring-olive-300 { --tw-ring-color: var(--c300) !important; }
-        .ring-olive-500 { --tw-ring-color: var(--c500) !important; }
-        .focus\\:border-olive-500:focus { border-color: var(--c500) !important; }
-        .focus\\:ring-olive-500:focus { --tw-ring-color: var(--c500) !important; }
-        .hover\\:border-olive-400:hover { border-color: var(--c400) !important; }
-        .hover\\:bg-olive-50:hover { background-color: var(--c50) !important; }
-        .hover\\:text-olive-700:hover { color: var(--c700) !important; }
+        .bg-olive-50 {
+            background-color: var(--c50) !important;
+        }
+
+        .bg-olive-100 {
+            background-color: var(--c100) !important;
+        }
+
+        .text-olive-500 {
+            color: var(--c500) !important;
+        }
+
+        .text-olive-600 {
+            color: var(--c600) !important;
+        }
+
+        .text-olive-700 {
+            color: var(--c700) !important;
+        }
+
+        .border-olive-200 {
+            border-color: var(--c200) !important;
+        }
+
+        .border-olive-300 {
+            border-color: var(--c300) !important;
+        }
+
+        .border-olive-400 {
+            border-color: var(--c400) !important;
+        }
+
+        .border-olive-500 {
+            border-color: var(--c500) !important;
+        }
+
+        .from-olive-400 {
+            --tw-gradient-from: var(--c400) !important;
+            --tw-gradient-to: transparent !important;
+            --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+        }
+
+        .to-olive-600 {
+            --tw-gradient-to: var(--c600) !important;
+        }
+
+        .ring-olive-300 {
+            --tw-ring-color: var(--c300) !important;
+        }
+
+        .ring-olive-500 {
+            --tw-ring-color: var(--c500) !important;
+        }
+
+        .focus\\:border-olive-500:focus {
+            border-color: var(--c500) !important;
+        }
+
+        .focus\\:ring-olive-500:focus {
+            --tw-ring-color: var(--c500) !important;
+        }
+
+        .hover\\:border-olive-400:hover {
+            border-color: var(--c400) !important;
+        }
+
+        .hover\\:bg-olive-50:hover {
+            background-color: var(--c50) !important;
+        }
+
+        .hover\\:text-olive-700:hover {
+            color: var(--c700) !important;
+        }
 
         * {
             -webkit-tap-highlight-color: transparent;
@@ -912,6 +968,7 @@
             });
             if (tab === 'progress') renderChapterList();
             if (tab === 'plan') renderPlan();
+            if (tab === 'settings') renderThemeGrid();
         }
 
         // ============================
@@ -923,12 +980,6 @@
             else if (type === 'new') selectedBooks = BIBLE_DATA.filter(b => b.testament === 'new').map(b => b.id);
             saveData();
             renderBookSelector();
-            // テーマ復元
-            const savedTheme = localStorage.getItem('bible-reader-theme');
-            if (savedTheme) applyTheme(savedTheme); else renderThemeGrid();
-            // ファビコン復元
-            const savedFavicon = localStorage.getItem('bible-reader-favicon');
-            if (savedFavicon) { applyFavicon(savedFavicon); document.getElementById('favicon-input').value = savedFavicon; }
             updatePreview();
         }
 
@@ -1595,13 +1646,13 @@
             { id: 'mint', name: 'ミント', emoji: '🍃', hue: 165 },
             { id: 'steel', name: 'スチール', emoji: '⚙️', hue: 210 },
             { id: 'wine', name: 'ワイン', emoji: '🍷', hue: 330 },
-        
+
             { id: 'tangerine', name: 'タンジェリン', hue: 18 },
             { id: 'marigold', name: 'マリーゴールド', hue: 40 },
             { id: 'butter', name: 'バター', hue: 50 },
             { id: 'lemon', name: 'レモン', hue: 56 },
             { id: 'peach', name: 'ピーチ', hue: 15 },
-];
+        ];
         let currentTheme = 'forest';
 
         function applyTheme(id) {
@@ -1700,6 +1751,11 @@
             updatePreview();
             renderPlan();
             renderChapterList();
+            renderThemeGrid();
+            var savedTheme = localStorage.getItem('bible-reader-theme');
+            if (savedTheme) applyTheme(savedTheme);
+            var savedFavicon = localStorage.getItem('bible-reader-favicon');
+            if (savedFavicon) { applyFavicon(savedFavicon); var fi = document.getElementById('favicon-input'); if (fi) fi.value = savedFavicon; }
         }
 
         document.addEventListener('DOMContentLoaded', init);
