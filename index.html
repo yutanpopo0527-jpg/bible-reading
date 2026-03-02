@@ -77,6 +77,16 @@
             --c900: #254a30;
         }
 
+        
+        /* バッジ */
+        .badge-item { transition: all 0.2s ease; cursor: pointer; }
+        .badge-item:hover { transform: scale(1.15); }
+        .badge-item.locked { opacity: 0.25; filter: grayscale(1); }
+        .badge-item.earned { animation: badgePop 0.3s ease; }
+        @keyframes badgePop { 0%{transform:scale(0.5)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+        .badge-cat-btn { transition: all 0.15s ease; }
+        .badge-cat-btn.active { border-color: var(--c500) !important; background: var(--c50) !important; color: var(--c700) !important; font-weight: 600; }
+
         .theme-stroke {
             stroke: var(--c500);
         }
@@ -385,6 +395,16 @@
                     進捗
                 </span>
             </button>
+            <button onclick="switchTab('badges')" id="tab-badges"
+                class="flex-1 py-3 text-sm text-center text-scripture-500 tab-transition">
+                <span class="flex items-center justify-center gap-1.5">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="6" /><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" />
+                    </svg>
+                    バッジ
+                </span>
+            </button>
             <button onclick="switchTab('settings')" id="tab-settings"
                 class="flex-1 py-3 text-sm text-center text-scripture-500 tab-transition">
                 <span class="flex items-center justify-center gap-1.5">
@@ -659,6 +679,34 @@
                     </div>
                 </div>
                 <div id="chapter-list" class="space-y-1.5"></div>
+            </div>
+        </div>
+
+        
+        <!-- ============ バッジタブ ============ -->
+        <div id="content-badges" class="hidden">
+            <div class="glass-card rounded-2xl p-5 shadow-sm mb-4">
+                <h2 class="font-bold text-scripture-800 mb-3 flex items-center gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="theme-stroke" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>
+                    バッジコレクション
+                </h2>
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="flex-1 h-4 bg-scripture-100 rounded-full overflow-hidden">
+                        <div id="badge-progress-bar" class="progress-bar h-full rounded-full" style="width: 0%"></div>
+                    </div>
+                    <span id="badge-progress-text" class="text-lg font-bold text-olive-600 min-w-[80px] text-right">0/1000</span>
+                </div>
+                <p id="badge-progress-pct" class="text-xs text-scripture-500 text-right">0%達成</p>
+            </div>
+            <div class="flex flex-wrap gap-1.5 mb-4" id="badge-cat-filter"></div>
+            <div id="badge-grid" class="grid grid-cols-5 sm:grid-cols-8 gap-1.5"></div>
+            <div id="badge-detail" class="hidden mt-4 glass-card rounded-2xl p-4 shadow-sm">
+                <div class="flex items-center gap-3 mb-2">
+                    <span id="bd-icon" class="text-3xl"></span>
+                    <div><h3 id="bd-name" class="font-bold text-scripture-800 text-sm"></h3><p id="bd-cat" class="text-[10px] text-scripture-500"></p></div>
+                </div>
+                <p id="bd-desc" class="text-xs text-scripture-600"></p>
+                <p id="bd-status" class="text-xs mt-1 font-medium"></p>
             </div>
         </div>
 
@@ -955,7 +1003,7 @@
         // タブ切り替え
         // ============================
         function switchTab(tab) {
-            ['plan', 'progress', 'settings'].forEach(t => {
+            ['plan', 'progress', 'badges', 'settings'].forEach(t => {
                 const btn = document.getElementById('tab-' + t);
                 const content = document.getElementById('content-' + t);
                 if (t === tab) {
@@ -969,6 +1017,7 @@
             if (tab === 'progress') renderChapterList();
             if (tab === 'plan') renderPlan();
             if (tab === 'settings') renderThemeGrid();
+            if (tab === 'badges') renderBadges();
         }
 
         // ============================
@@ -1673,6 +1722,7 @@
             r.setProperty('--c900', 'hsl(' + hu + ', 32%, 22%)');
             localStorage.setItem('bible-reader-theme', id);
             renderThemeGrid();
+            allBadges = generateAllBadges();
         }
 
         function renderThemeGrid() {
@@ -1732,6 +1782,306 @@
             const img = document.getElementById('favicon-preview-img');
             img.src = url;
             prev.classList.remove('hidden');
+        }
+
+
+        // ============================
+        // バッジシステム (1000個)
+        // ============================
+        const BOOK_GROUPS = [
+            {id:'torah',name:'律法',books:['gen','exo','lev','num','deu']},
+            {id:'hist1',name:'歴史書(前)',books:['jos','jdg','rut','1sa','2sa']},
+            {id:'hist2',name:'歴史書(後)',books:['1ki','2ki','1ch','2ch','ezr','neh','est']},
+            {id:'poetry',name:'詩歌・知恵',books:['job','psa','pro','ecc','sng']},
+            {id:'mprophet',name:'大預言書',books:['isa','jer','lam','ezk','dan']},
+            {id:'sprophet',name:'小預言書',books:['hos','jol','amo','oba','jon','mic','nah','hab','zep','hag','zec','mal']},
+            {id:'gospels',name:'福音書',books:['mat','mrk','luk','jhn']},
+            {id:'acts',name:'使徒の働き',books:['act']},
+            {id:'paul',name:'パウロ書簡',books:['rom','1co','2co','gal','eph','php','col','1th','2th','1ti','2ti','tit','phm']},
+            {id:'general',name:'公同書簡',books:['heb','jas','1pe','2pe','1jn','2jn','3jn','jud']},
+            {id:'rev',name:'黙示録',books:['rev']},
+            {id:'synoptic',name:'共観福音書',books:['mat','mrk','luk']},
+            {id:'johannine',name:'ヨハネ文書',books:['jhn','1jn','2jn','3jn','rev']},
+            {id:'prison',name:'獄中書簡',books:['eph','php','col','phm']}
+        ];
+
+        let allBadges = [];
+        let earnedBadgeIds = new Set();
+        let badgeCatFilter = 'all';
+
+        function generateAllBadges() {
+            const B = [];
+            let id = 0;
+            var add = function(cat, catName, name, desc, icon, crit) {
+                B.push({id: ++id, cat: cat, catName: catName, name: name, desc: desc, icon: icon, crit: crit});
+            };
+
+            // --- Cat 1: 書巻開始 (66) ---
+            BIBLE_DATA.forEach(function(b) { add('start','書巻の扉', b.abbr+'を開始', b.name+'の通読を始めた', '📖', {type:'book_start',bid:b.id}); });
+
+            // --- Cat 2: 書巻完読 (66) ---
+            BIBLE_DATA.forEach(function(b) { add('done','書巻マスター', b.abbr+'完読', b.name+'を全章読了した', '🏆', {type:'book_done',bid:b.id}); });
+
+            // --- Cat 3: 読了書巻数 1-66 (66) ---
+            for(var i=1;i<=66;i++) add('bcount','通読の歩み', i+'巻完読', i+'巻の書巻を読了した', i<=10?'🌱':i<=30?'🌳':i<=50?'⭐':'👑', {type:'books_n',n:i});
+
+            // --- Cat 4: 章読了マイルストーン (240) ---
+            [1,2,3,4,5,6,7,8,9,10].forEach(function(n) { add('chap','章の軌跡', n+'章読了', '合計'+n+'章を読了した', '📄', {type:'ch_n',n:n}); });
+            for(var i=15;i<=1185;i+=5) add('chap','章の軌跡', i+'章読了', '合計'+i+'章を読了した', i<100?'📄':i<500?'📑':i<1000?'📋':'📜', {type:'ch_n',n:i});
+            add('chap','章の軌跡', '全1189章', '聖書の全1189章を読了', '🌟', {type:'ch_n',n:1189});
+
+            // --- Cat 5: 節読了マイルストーン (125) ---
+            [50,100,200,300,400,500].forEach(function(n) { add('verse','節の軌跡', n+'節読了', '合計'+n+'節を読了', '✏️', {type:'v_n',n:n}); });
+            for(var i=1000;i<=31000;i+=250) add('verse','節の軌跡', i+'節読了', '合計'+i+'節を読了', i<5000?'✏️':i<15000?'📝':i<25000?'🖊️':'💫', {type:'v_n',n:i});
+            add('verse','節の軌跡', '全31102節', '聖書の全節を読了', '✨', {type:'v_n',n:31102});
+
+            // --- Cat 6: 連続日数 (50) ---
+            for(var i=1;i<=30;i++) add('streak','継続の力', i+'日連続', i+'日連続で読書した', i<=3?'🔥':i<=7?'💪':i<=14?'🌟':i<=21?'⚡':'🏅', {type:'streak',n:i});
+            [35,40,45,50,60,70,80,90,100,120,150,180,200,250,300,330,350,365].forEach(function(n) {
+                add('streak','継続の力', n+'日連続', n+'日連続で読書した', n<100?'🏅':n<200?'💎':n<365?'🔮':'👑', {type:'streak',n:n});
+            });
+            // 48 streak badges, need 2 more
+            add('streak','継続の力', '400日連続', '400日連続で読書した', '👑', {type:'streak',n:400});
+            add('streak','継続の力', '500日連続', '500日連続で読書した', '👑', {type:'streak',n:500});
+
+            // --- Cat 7: 累計読書日数 (20) ---
+            [1,3,5,7,10,15,20,25,30,50,75,100,150,200,250,300,365,500,750,1000].forEach(function(n) {
+                add('days','読書の記録', '累計'+n+'日', '合計'+n+'日読書した', n<10?'📅':n<50?'🗓️':n<200?'📆':'🏛️', {type:'total_days',n:n});
+            });
+
+            // --- Cat 8: 書巻グループ完読 (14) ---
+            BOOK_GROUPS.forEach(function(g) { add('group','グループ制覇', g.name+'完読', g.name+'のすべての書巻を読了', '🎖️', {type:'group',gid:g.id}); });
+
+            // --- Cat 9: 聖書区分 (3) ---
+            add('bible','聖書の完走', '旧約聖書完読', '旧約聖書39巻をすべて読了', '🏅', {type:'testament',t:'old'});
+            add('bible','聖書の完走', '新約聖書完読', '新約聖書27巻をすべて読了', '🥇', {type:'testament',t:'new'});
+            add('bible','聖書の完走', '聖書全巻完読', '聖書66巻すべてを読了', '👑', {type:'testament',t:'all'});
+
+            // --- Cat 10: 詩篇各篇 (150) ---
+            for(var i=1;i<=150;i++) add('psalm','詩篇の旅', '詩篇'+i+'篇', '詩篇第'+i+'篇を読了した', i===23?'🐑':i===119?'📜':i===150?'🎵':'📖', {type:'ch_specific',bid:'psa',ch:i});
+
+            // --- Cat 11: 福音書各章 (89) ---
+            ['mat','mrk','luk','jhn'].forEach(function(bid) {
+                var book = getBook(bid);
+                if(!book) return;
+                for(var c=1;c<=book.chapters.length;c++) add('gospel','福音書の道', book.abbr+' '+c+'章', book.name+'第'+c+'章を読了', '✝️', {type:'ch_specific',bid:bid,ch:c});
+            });
+
+            // --- Cat 12: 特別バッジ (remaining to reach 1000) ---
+            var remaining = 1000 - B.length;
+            // Isaiah chapters (66)
+            var isaBook = getBook('isa');
+            if(isaBook) { for(var c=1;c<=Math.min(isaBook.chapters.length, remaining);c++) { add('special','特別達成', 'イザヤ '+c+'章', 'イザヤ書第'+c+'章を読了', '🕊️', {type:'ch_specific',bid:'isa',ch:c}); } }
+            remaining = 1000 - B.length;
+            // Genesis chapters
+            if(remaining > 0) {
+                var genBook = getBook('gen');
+                if(genBook) { for(var c=1;c<=Math.min(genBook.chapters.length, remaining);c++) { add('special','特別達成', '創世記 '+c+'章', '創世記第'+c+'章を読了', '🌅', {type:'ch_specific',bid:'gen',ch:c}); } }
+            }
+            remaining = 1000 - B.length;
+            // Romans chapters
+            if(remaining > 0) {
+                var romBook = getBook('rom');
+                if(romBook) { for(var c=1;c<=Math.min(romBook.chapters.length, remaining);c++) { add('special','特別達成', 'ローマ '+c+'章', 'ローマ人への手紙第'+c+'章を読了', '📜', {type:'ch_specific',bid:'rom',ch:c}); } }
+            }
+            remaining = 1000 - B.length;
+            // Proverbs chapters
+            if(remaining > 0) {
+                var proBook = getBook('pro');
+                if(proBook) { for(var c=1;c<=Math.min(proBook.chapters.length, remaining);c++) { add('special','特別達成', '箴言 '+c+'章', '箴言第'+c+'章を読了', '💡', {type:'ch_specific',bid:'pro',ch:c}); } }
+            }
+
+            // Final trim/pad to exactly 1000
+            while(B.length > 1000) B.pop();
+
+            return B;
+        }
+
+        function getReadingStats() {
+            var completed = appState.completed || {};
+            var chapDone = {};
+            // From direct chapter tracking
+            Object.keys(completed).forEach(function(k) { if(completed[k]) chapDone[k] = true; });
+            // From plan day tracking
+            if(appState.plan && appState.plan.schedule) {
+                appState.plan.schedule.forEach(function(day) {
+                    if(!appState.completedDays[day.date]) return;
+                    day.readings.forEach(function(r) {
+                        var book = getBook(r.bookId);
+                        if(!book) return;
+                        if(r.from === 1 && r.to === book.chapters[r.ch-1]) {
+                            chapDone[r.bookId+':'+r.ch] = true;
+                        }
+                    });
+                });
+            }
+
+            var totalChapters = 0;
+            var totalVerses = 0;
+            var booksComplete = [];
+
+            BIBLE_DATA.forEach(function(book) {
+                var allDone = true;
+                var bookVerses = 0;
+                book.chapters.forEach(function(v, i) {
+                    if(chapDone[book.id+':'+(i+1)]) { totalChapters++; bookVerses += v; }
+                    else allDone = false;
+                });
+                totalVerses += bookVerses;
+                if(allDone && book.chapters.length > 0) booksComplete.push(book.id);
+            });
+
+            // Streak & total days
+            var readDates = {};
+            if(appState.plan && appState.plan.schedule) {
+                appState.plan.schedule.forEach(function(day) { if(appState.completedDays[day.date]) readDates[day.date] = true; });
+            }
+            Object.keys(completed).forEach(function(k) {
+                if(completed[k]) {
+                    var today = formatDateISO(new Date());
+                    readDates[today] = true;
+                }
+            });
+            var sortedDates = Object.keys(readDates).sort();
+            var totalDays = sortedDates.length;
+            var streak = 0;
+            if(sortedDates.length > 0) {
+                streak = 1;
+                for(var i = sortedDates.length - 2; i >= 0; i--) {
+                    var d1 = new Date(sortedDates[i+1]);
+                    var d2 = new Date(sortedDates[i]);
+                    var diff = Math.round((d1 - d2) / 86400000);
+                    if(diff === 1) streak++;
+                    else break;
+                }
+            }
+
+            return {
+                chapDone: chapDone,
+                totalChapters: totalChapters,
+                totalVerses: totalVerses,
+                booksComplete: booksComplete,
+                streak: streak,
+                totalDays: totalDays
+            };
+        }
+
+        function evaluateBadge(badge, stats) {
+            var c = badge.crit;
+            switch(c.type) {
+                case 'book_start':
+                    return BIBLE_DATA.some(function(b) {
+                        if(b.id !== c.bid) return false;
+                        return b.chapters.some(function(_, i) { return !!stats.chapDone[b.id+':'+(i+1)]; });
+                    });
+                case 'book_done':
+                    return stats.booksComplete.indexOf(c.bid) >= 0;
+                case 'books_n':
+                    return stats.booksComplete.length >= c.n;
+                case 'ch_n':
+                    return stats.totalChapters >= c.n;
+                case 'v_n':
+                    return stats.totalVerses >= c.n;
+                case 'streak':
+                    return stats.streak >= c.n;
+                case 'total_days':
+                    return stats.totalDays >= c.n;
+                case 'group':
+                    var g = BOOK_GROUPS.find(function(gr) { return gr.id === c.gid; });
+                    if(!g) return false;
+                    return g.books.every(function(bid) { return stats.booksComplete.indexOf(bid) >= 0; });
+                case 'testament':
+                    if(c.t === 'old') return BIBLE_DATA.filter(function(b){return b.testament==='old';}).every(function(b){return stats.booksComplete.indexOf(b.id)>=0;});
+                    if(c.t === 'new') return BIBLE_DATA.filter(function(b){return b.testament==='new';}).every(function(b){return stats.booksComplete.indexOf(b.id)>=0;});
+                    return BIBLE_DATA.every(function(b){return stats.booksComplete.indexOf(b.id)>=0;});
+                case 'ch_specific':
+                    return !!stats.chapDone[c.bid+':'+c.ch];
+                default: return false;
+            }
+        }
+
+        function checkAllBadges() {
+            var stats = getReadingStats();
+            earnedBadgeIds = new Set();
+            allBadges.forEach(function(badge) {
+                if(evaluateBadge(badge, stats)) earnedBadgeIds.add(badge.id);
+            });
+            var arr = Array.from(earnedBadgeIds);
+            localStorage.setItem('bible-reader-badges', JSON.stringify(arr));
+        }
+
+        function getCatList() {
+            var cats = {};
+            allBadges.forEach(function(b) { if(!cats[b.cat]) cats[b.cat] = b.catName; });
+            return cats;
+        }
+
+        function renderBadges() {
+            if(allBadges.length === 0) allBadges = generateAllBadges();
+            checkAllBadges();
+            var earned = earnedBadgeIds.size;
+            var total = allBadges.length;
+            var pct = total > 0 ? Math.round(earned/total*100) : 0;
+
+            var bar = document.getElementById('badge-progress-bar');
+            var txt = document.getElementById('badge-progress-text');
+            var pctEl = document.getElementById('badge-progress-pct');
+            if(bar) bar.style.width = pct + '%';
+            if(txt) txt.textContent = earned + '/' + total;
+            if(pctEl) pctEl.textContent = pct + '%達成';
+
+            // Category filter
+            var catFilter = document.getElementById('badge-cat-filter');
+            if(catFilter) {
+                var cats = getCatList();
+                var html = '<button onclick="setBadgeCat(\'all\')" class="badge-cat-btn text-[10px] px-2 py-1 rounded-lg border border-scripture-200 text-scripture-600 ' + (badgeCatFilter==='all'?'active':'') + '">すべて</button>';
+                Object.keys(cats).forEach(function(key) {
+                    var catBadges = allBadges.filter(function(b){return b.cat===key;});
+                    var catEarned = catBadges.filter(function(b){return earnedBadgeIds.has(b.id);}).length;
+                    html += '<button onclick="setBadgeCat(\''+key+'\')" class="badge-cat-btn text-[10px] px-2 py-1 rounded-lg border border-scripture-200 text-scripture-600 ' + (badgeCatFilter===key?'active':'') + '">' + cats[key] + ' <span class=\'text-scripture-400\'>' + catEarned + '/' + catBadges.length + '</span></button>';
+                });
+                catFilter.innerHTML = html;
+            }
+
+            // Badge grid
+            var grid = document.getElementById('badge-grid');
+            if(grid) {
+                var filtered = badgeCatFilter === 'all' ? allBadges : allBadges.filter(function(b){return b.cat===badgeCatFilter;});
+                var ghtml = '';
+                filtered.forEach(function(b) {
+                    var isEarned = earnedBadgeIds.has(b.id);
+                    ghtml += '<div class="badge-item ' + (isEarned?'earned':'locked') + ' flex flex-col items-center p-1 rounded-lg" onclick="showBadgeDetail('+b.id+')" title="'+b.name+'">'
+                        + '<span class="text-xl">' + b.icon + '</span>'
+                        + '<span class="text-[8px] text-scripture-600 text-center leading-tight truncate w-full">' + b.name + '</span>'
+                        + '</div>';
+                });
+                grid.innerHTML = ghtml;
+            }
+        }
+
+        function setBadgeCat(cat) {
+            badgeCatFilter = cat;
+            renderBadges();
+        }
+
+        function showBadgeDetail(id) {
+            var badge = allBadges.find(function(b){return b.id===id;});
+            if(!badge) return;
+            var det = document.getElementById('badge-detail');
+            if(!det) return;
+            det.classList.remove('hidden');
+            document.getElementById('bd-icon').textContent = badge.icon;
+            document.getElementById('bd-name').textContent = badge.name;
+            document.getElementById('bd-cat').textContent = badge.catName;
+            document.getElementById('bd-desc').textContent = badge.desc;
+            var statusEl = document.getElementById('bd-status');
+            if(earnedBadgeIds.has(badge.id)) {
+                statusEl.textContent = '✅ 獲得済み！';
+                statusEl.className = 'text-xs mt-1 font-medium text-olive-600';
+            } else {
+                statusEl.textContent = '🔒 未獲得';
+                statusEl.className = 'text-xs mt-1 font-medium text-scripture-400';
+            }
         }
 
         // ============================
