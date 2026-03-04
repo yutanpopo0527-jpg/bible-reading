@@ -573,8 +573,17 @@
             <!-- 現在のプラン概要 -->
             <div id="plan-summary" class="hidden mb-6">
                 <div class="glass-card rounded-2xl p-5 shadow-sm">
-                    <div class="flex items-center justify-between mb-3">
-                        <h2 class="font-bold text-scripture-800">現在のプラン</h2>
+                    <div class="flex items-center gap-2 mb-4">
+                        <select id="active-plan-selector" onchange="switchActivePlan()"
+                            class="flex-1 rounded-xl border-2 border-scripture-200 px-3 py-2 text-sm focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none transition-colors bg-white font-bold text-scripture-800">
+                        </select>
+                        <button onclick="showPlanForm()"
+                            class="text-xs bg-olive-50 text-olive-600 px-3 py-2.5 rounded-xl font-medium border border-olive-200 hover:bg-olive-100 transition-colors whitespace-nowrap">＋
+                            新規作成</button>
+                    </div>
+
+                    <div class="flex items-center justify-between mb-3 border-t border-scripture-100 pt-4">
+                        <h2 class="font-bold text-scripture-800" id="current-plan-name">プランの詳細</h2>
                         <button onclick="deletePlan()"
                             class="text-xs text-red-400 hover:text-red-600 transition-colors">プラン削除</button>
                     </div>
@@ -598,8 +607,20 @@
                         </div>
                     </div>
                     <!-- プログレスバー -->
-                    <div class="w-full h-3 bg-scripture-100 rounded-full overflow-hidden">
+                    <div class="w-full h-3 bg-scripture-100 rounded-full overflow-hidden mb-4">
                         <div id="plan-progress-bar" class="progress-bar h-full rounded-full" style="width: 0%"></div>
+                    </div>
+                    <!-- 完了ボタン -->
+                    <div id="plan-complete-action" class="hidden text-center mt-2">
+                        <button onclick="completeActivePlan()"
+                            class="w-full bg-gradient-to-r from-olive-400 to-olive-500 text-white font-bold py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            プランをコンプリートして履歴に保存
+                        </button>
                     </div>
                 </div>
             </div>
@@ -675,6 +696,13 @@
                                 <div class="text-[10px] opacity-70">複数書巻を並行して読む</div>
                             </button>
                         </div>
+                    </div>
+
+                    <!-- プラン名 -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-scripture-700 mb-1">プラン名 (任意)</label>
+                        <input type="text" id="plan-name-input" placeholder="例: 新約聖書通読"
+                            class="w-full rounded-xl border-2 border-scripture-200 px-4 py-2.5 text-sm focus:border-olive-500 focus:ring-1 focus:ring-olive-500 outline-none transition-colors bg-white">
                     </div>
 
                     <!-- 期間タイプ -->
@@ -755,10 +783,16 @@
                     </div>
 
                     <!-- 作成ボタン -->
-                    <button onclick="createPlan()"
-                        class="btn-primary w-full text-white font-semibold py-3 rounded-xl shadow-md text-sm">
-                        プランを作成する
-                    </button>
+                    <div class="flex gap-2">
+                        <button id="cancel-plan-btn" onclick="renderPlan()"
+                            class="hidden flex-1 border-2 border-scripture-200 text-scripture-600 font-semibold py-3 rounded-xl hover:bg-scripture-50 transition-colors text-sm">
+                            キャンセル
+                        </button>
+                        <button onclick="createPlan()"
+                            class="flex-[2] btn-primary text-white font-semibold py-3 rounded-xl shadow-md text-sm">
+                            プランを作成する
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -782,45 +816,107 @@
 
         <!-- ============ 進捗タブ ============ -->
         <div id="content-progress" class="hidden">
-            <!-- 全体進捗 -->
+            <!-- 拡張された全体進捗 -->
             <div class="glass-card rounded-2xl p-5 shadow-sm mb-6">
-                <h2 class="font-bold text-scripture-800 mb-3">全体の進捗</h2>
-                <div class="flex items-center gap-4 mb-3">
-                    <div class="flex-1 h-4 bg-scripture-100 rounded-full overflow-hidden">
-                        <div id="total-progress-bar" class="progress-bar h-full rounded-full" style="width: 0%"></div>
+                <h2 class="font-bold text-scripture-800 mb-4 flex items-center gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="theme-stroke" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                    </svg>
+                    総合進捗（全巻・旧約・新約）
+                </h2>
+
+                <!-- 聖書全巻 -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="font-bold text-scripture-700">聖書全巻</span>
+                        <span id="prog-txt-all" class="font-bold text-olive-600">0%</span>
                     </div>
-                    <span id="total-progress-text"
-                        class="text-lg font-bold text-olive-600 min-w-[50px] text-right">0%</span>
+                    <div class="w-full h-3 bg-scripture-100 rounded-full overflow-hidden">
+                        <div id="prog-bar-all" class="progress-bar h-full rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p id="prog-stat-all" class="text-xs text-scripture-400 mt-1 text-right">0 / 0 章</p>
                 </div>
-                <div class="grid grid-cols-3 gap-3 text-center">
-                    <div class="stat-card rounded-xl p-3">
-                        <p class="text-xs text-scripture-500">完了</p>
-                        <p id="stat-done" class="text-lg font-bold text-olive-600">0</p>
-                        <p class="text-xs text-scripture-400">章</p>
+
+                <!-- 旧約聖書 -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="font-bold text-scripture-700">旧約聖書</span>
+                        <span id="prog-txt-ot" class="font-bold text-olive-600">0%</span>
                     </div>
-                    <div class="stat-card rounded-xl p-3">
-                        <p class="text-xs text-scripture-500">残り</p>
-                        <p id="stat-remaining" class="text-lg font-bold text-parchment-600">0</p>
-                        <p class="text-xs text-scripture-400">章</p>
+                    <div class="w-full h-2.5 bg-scripture-100 rounded-full overflow-hidden">
+                        <div id="prog-bar-ot"
+                            class="bg-gradient-to-r from-blue-400 to-indigo-500 h-full rounded-full transition-all duration-500"
+                            style="width: 0%"></div>
                     </div>
-                    <div class="stat-card rounded-xl p-3">
-                        <p class="text-xs text-scripture-500">読了節数</p>
-                        <p id="stat-verses" class="text-lg font-bold text-scripture-700">0</p>
-                        <p id="stat-total-verses" class="text-xs text-scripture-400">/ 0</p>
+                    <p id="prog-stat-ot" class="text-[10px] text-scripture-400 mt-1 text-right">0 / 0 章</p>
+                </div>
+
+                <!-- 新約聖書 -->
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="font-bold text-scripture-700">新約聖書</span>
+                        <span id="prog-txt-nt" class="font-bold text-olive-600">0%</span>
                     </div>
+                    <div class="w-full h-2.5 bg-scripture-100 rounded-full overflow-hidden">
+                        <div id="prog-bar-nt"
+                            class="bg-gradient-to-r from-orange-400 to-red-500 h-full rounded-full transition-all duration-500"
+                            style="width: 0%"></div>
+                    </div>
+                    <p id="prog-stat-nt" class="text-[10px] text-scripture-400 mt-1 text-right">0 / 0 章</p>
+                </div>
+            </div>
+
+            <!-- 現在のアクティブプラン進捗 -->
+            <div id="active-plan-progress-card" class="glass-card rounded-2xl p-5 shadow-sm mb-6 hidden">
+                <h2 class="font-bold text-scripture-800 mb-4 flex items-center gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="theme-stroke" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    進行中のプランの進捗
+                </h2>
+
+                <div id="active-plans-container" class="space-y-4">
+                    <!-- 進捗はJSで生成 -->
+                </div>
+            </div>
+
+            <!-- コンプリートしたプランの履歴 -->
+            <div class="glass-card rounded-2xl p-5 shadow-sm mb-6">
+                <h2 class="font-bold text-scripture-800 mb-3 flex items-center gap-2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="theme-stroke" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2-2v4"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <path d="M3 15h6"></path>
+                        <path d="M6 12v6"></path>
+                    </svg>
+                    コンプリートしたプラン履歴
+                </h2>
+                <div id="completed-plans-list" class="space-y-2 text-sm text-scripture-700">
+                    <p class="text-xs text-scripture-400">完了したプランはありません</p>
                 </div>
             </div>
 
             <!-- 章一覧 -->
             <div class="glass-card rounded-2xl p-5 shadow-sm">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="font-bold text-scripture-800">書巻の一覧</h2>
+                    <h2 class="font-bold text-scripture-800">細かくチェックする</h2>
                     <div class="flex gap-2">
                         <button onclick="uncheckAll()"
                             class="text-xs text-scripture-500 hover:text-red-500 transition-colors px-2 py-1 rounded-lg hover:bg-red-50">全解除</button>
                         <button onclick="checkAll()"
                             class="text-xs text-olive-600 hover:text-olive-700 transition-colors px-2 py-1 rounded-lg hover:bg-olive-50">全完了</button>
                     </div>
+                </div>
+                <!-- 追加: 表示範囲の切り替え -->
+                <div class="flex gap-2 mb-3">
+                    <button onclick="renderChapterList('plan')" id="btn-chapter-view-plan"
+                        class="flex-1 py-1.5 text-xs rounded-lg border-2 border-olive-500 bg-olive-50 font-bold text-olive-700 transition-all">現在のプラン対象</button>
+                    <button onclick="renderChapterList('all')" id="btn-chapter-view-all"
+                        class="flex-1 py-1.5 text-xs rounded-lg border-2 border-scripture-200 text-scripture-500 hover:border-olive-300 transition-all">聖書全巻</button>
                 </div>
                 <div id="chapter-list" class="space-y-1.5"></div>
             </div>
@@ -865,6 +961,8 @@
         <!-- ============ 設定タブ ============ -->
         <div id="content-settings" class="hidden">
             <div class="space-y-4">
+
+
                 <!-- バックアップ -->
                 <div class="glass-card rounded-2xl p-5 shadow-sm">
                     <h2 class="font-bold text-scripture-800 mb-1 flex items-center gap-2">
@@ -1109,12 +1207,18 @@
         // 状態管理
         // ============================
         let appState = {
-            plan: null,
+            plans: [],
+            activePlanId: null,
+            completedPlans: [],
             completed: {},
-            completedDays: {},
         };
         let selectedBooks = ['act']; // デフォルト: 使徒の働き
         let currentPeriodType = 'month';
+
+        function getActivePlan() {
+            if (!appState.plans || appState.plans.length === 0) return null;
+            return appState.plans.find(p => p.id === appState.activePlanId) || appState.plans[0];
+        }
 
         // ============================
         // ストレージ
@@ -1124,21 +1228,34 @@
                 const raw = localStorage.getItem(STORAGE_KEY);
                 if (raw) {
                     const data = JSON.parse(raw);
-                    appState = data.appState || { plan: null, completed: {}, completedDays: {} };
+                    appState = data.appState || { plans: [], activePlanId: null, completedPlans: [], completed: {} };
+
                     if (!appState.completed) appState.completed = {};
-                    if (!appState.completedDays) appState.completedDays = {};
-                    if (data.selectedBooks) selectedBooks = data.selectedBooks;
-                    // 旧形式互換
-                    if (appState.plan && appState.plan.schedule && appState.plan.schedule.length > 0 && !appState.plan.schedule[0].readings) {
-                        appState.plan = null;
-                        appState.completedDays = {};
+                    if (!appState.plans) appState.plans = [];
+                    if (!appState.completedPlans) appState.completedPlans = [];
+
+                    // 旧形式（単一プラン）から複数プランへの互換・マイグレーション
+                    if (appState.plan) {
+                        appState.plan.id = 'plan-' + Date.now();
+                        appState.plan.name = 'プラン 1';
+                        appState.plan.completedDays = appState.completedDays || {};
+                        appState.plans.push(appState.plan);
+                        appState.activePlanId = appState.plan.id;
+                        delete appState.plan;
+                        delete appState.completedDays;
                     }
+
+                    if (!appState.activePlanId && appState.plans.length > 0) {
+                        appState.activePlanId = appState.plans[0].id;
+                    }
+                    if (data.selectedBooks) selectedBooks = data.selectedBooks;
                 }
+
                 // 旧キー互換
                 const oldRaw = localStorage.getItem('acts-reader-data');
                 if (oldRaw && !raw) {
                     const old = JSON.parse(oldRaw);
-                    appState = { plan: null, completed: old.completed || {}, completedDays: old.completedDays || {} };
+                    appState = { plans: [], activePlanId: null, completedPlans: [], completed: old.completed || {} };
                     selectedBooks = ['act'];
                     saveData();
                 }
@@ -1340,15 +1457,22 @@
                 schedule = createSequentialSchedule(info);
             }
 
-            appState.plan = {
+            const numAllPlans = (appState.plans ? appState.plans.length : 0) + (appState.completedPlans ? appState.completedPlans.length : 0);
+            let planName = document.getElementById('plan-name-input').value.trim();
+            if (!planName) planName = `プラン ${numAllPlans + 1}`;
+
+            const newPlan = {
+                id: 'plan-' + Date.now(),
+                name: planName,
                 startDate: formatDateISO(info.start), endDate: formatDateISO(info.end),
                 periodType: currentPeriodType, books: [...selectedBooks], schedule,
                 readingMode: readingMode,
-                periodValue: currentPeriodType === 'week' ? document.getElementById('sel-weeks').value
-                    : currentPeriodType === 'month' ? document.getElementById('sel-months').value
-                        : document.getElementById('sel-enddate').value,
+                periodValue: currentPeriodType === 'week' ? document.getElementById('sel-weeks').value : currentPeriodType === 'month' ? document.getElementById('sel-months').value : document.getElementById('sel-enddate').value,
+                completedDays: {}
             };
-            appState.completedDays = {};
+            appState.plans.push(newPlan);
+            appState.activePlanId = newPlan.id;
+
             saveData(); renderPlan();
             showToast('通読プランを作成しました！');
         }
@@ -1432,10 +1556,85 @@
         }
 
         function deletePlan() {
-            showConfirm('プランの削除', 'プランを削除しますか？', '削除する', () => {
-                appState.plan = null; appState.completedDays = {};
-                saveData(); renderPlan(); showToast('プランを削除しました');
+            showConfirm('プランの削除', '現在のプランを削除しますか？\n※このプランのみで獲得した進行中のバッジは取り消されます。', '削除する', () => {
+                appState.plans = appState.plans.filter(p => p.id !== appState.activePlanId);
+                appState.activePlanId = appState.plans.length > 0 ? appState.plans[0].id : null;
+                saveData();
+                checkAllBadges();
+                renderBadges();
+                renderPlan(); showToast('プランを削除しました');
             });
+        }
+
+        function showPlanForm() {
+            document.getElementById('plan-form').classList.remove('hidden');
+            document.getElementById('plan-summary').classList.add('hidden');
+            document.getElementById('today-reading').classList.add('hidden');
+            document.getElementById('schedule-list').classList.add('hidden');
+
+            const cancelBtn = document.getElementById('cancel-plan-btn');
+            if (cancelBtn) cancelBtn.classList.remove('hidden');
+        }
+
+        function switchActivePlan() {
+            const selector = document.getElementById('active-plan-selector');
+            appState.activePlanId = selector.value;
+            saveData();
+            document.getElementById('plan-name-input').value = '';
+            renderPlan();
+            renderChapterList(); // 進捗タブの現在プラン進捗も更新するため
+        }
+
+        function completeActivePlan() {
+            const plan = getActivePlan();
+            if (!plan) return;
+            showConfirm('プランの完了', 'このプランをコンプリートして履歴に保存しますか？', '完了する', () => {
+                plan.completedAt = formatDateISO(new Date());
+                if (!appState.completedPlans) appState.completedPlans = [];
+                appState.completedPlans.push(plan);
+                appState.plans = appState.plans.filter(p => p.id !== appState.activePlanId);
+                appState.activePlanId = appState.plans.length > 0 ? appState.plans[0].id : null;
+
+                saveData();
+                checkAllBadges(); // 完了後にバッジを再評価
+                renderPlan();
+                renderChapterList();
+                renderCompletedPlans();
+                showToast('プランをコンプリートしました！バッジをご確認ください。');
+            });
+        }
+
+        // ============================
+        // コンプリートしたプランの履歴表示
+        // ============================
+        function renderCompletedPlans() {
+            const container = document.getElementById('completed-plans-list');
+            if (!container) return;
+            const plans = appState.completedPlans || [];
+            if (plans.length === 0) {
+                container.innerHTML = '<p class="text-xs text-scripture-400">完了したプランはありません</p>';
+                return;
+            }
+
+            let html = '';
+            // 降順で表示 (新しいものが上)
+            for (let i = plans.length - 1; i >= 0; i--) {
+                const p = plans[i];
+                const totalV = p.schedule ? p.schedule.reduce((s, d) => s + d.verseCount, 0) : 0;
+                const completedAtStr = p.completedAt ? formatDateJP(p.completedAt) : '不明';
+                const startStr = p.startDate ? formatDateJP(p.startDate) : '不明';
+
+                html += `
+                <div class="bg-olive-50 p-3 rounded-xl border border-olive-100 mb-2">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold text-olive-800 text-sm">${p.name} <span class="bg-olive-200 text-olive-800 text-[10px] px-1.5 py-0.5 rounded ml-1">完了</span></span>
+                        <span class="text-xs text-scripture-500">${completedAtStr} 読了</span>
+                    </div>
+                    <p class="text-[10px] text-scripture-500 mb-1">開始日: ${startStr} / 読了総節数: ${totalV}節</p>
+                    <p class="text-xs text-scripture-600 line-clamp-1">${(p.books || []).map(b => getBook(b) ? getBook(b).name : '').join(', ')}</p>
+                </div>`;
+            }
+            container.innerHTML = html;
         }
 
         // ============================
@@ -1466,14 +1665,21 @@
             const scheduleList = document.getElementById('schedule-list');
             const planForm = document.getElementById('plan-form');
 
-            if (!appState.plan) {
+            const plan = getActivePlan();
+            if (!plan) {
                 summary.classList.add('hidden'); todayReading.classList.add('hidden'); scheduleList.classList.add('hidden');
                 planForm.classList.remove('hidden'); return;
             }
             planForm.classList.add('hidden'); summary.classList.remove('hidden'); scheduleList.classList.remove('hidden');
-            const plan = appState.plan;
+
+            // プランセレクタの更新
+            const selector = document.getElementById('active-plan-selector');
+            if (selector) {
+                selector.innerHTML = appState.plans.map(p => `<option value="${p.id}" ${p.id === plan.id ? 'selected' : ''}>${p.name}</option>`).join('');
+            }
+
             const totalV = plan.schedule.reduce((s, d) => s + d.verseCount, 0);
-            const completedV = getCompletedVerseCount();
+            const completedV = getCompletedVerseCount(plan);
             const rate = Math.round((completedV / totalV) * 100);
 
             document.getElementById('plan-period').textContent = `${formatDateShort(plan.startDate)} ～ ${formatDateShort(plan.endDate)}`;
@@ -1482,13 +1688,20 @@
             document.getElementById('plan-rate').textContent = rate + '%';
             document.getElementById('plan-progress-bar').style.width = rate + '%';
 
+            const btnComplete = document.getElementById('plan-complete-action');
+            if (rate >= 100) {
+                btnComplete.classList.remove('hidden');
+            } else {
+                btnComplete.classList.add('hidden');
+            }
+
             // 今日の読書
             const todayStr = formatDateISO(new Date());
             const todayEntry = plan.schedule.find(s => s.date === todayStr);
             if (todayEntry) {
                 todayReading.classList.remove('hidden');
                 document.getElementById('today-date').textContent = formatDateJP(todayStr);
-                const todayDone = !!appState.completedDays[todayStr];
+                const todayDone = !!plan.completedDays[todayStr];
                 const container = document.getElementById('today-chapters');
                 container.innerHTML = '';
                 const wrapper = document.createElement('div');
@@ -1521,8 +1734,8 @@
             Object.keys(monthGroups).sort().forEach(mk => {
                 const entries = monthGroups[mk];
                 const [y, m] = mk.split('-');
-                const doneCount = entries.filter(e => !!appState.completedDays[e.date]).length;
-                const doneV = entries.filter(e => !!appState.completedDays[e.date]).reduce((s, e) => s + e.verseCount, 0);
+                const doneCount = entries.filter(e => !!plan.completedDays[e.date]).length;
+                const doneV = entries.filter(e => !!plan.completedDays[e.date]).reduce((s, e) => s + e.verseCount, 0);
                 const totV = entries.reduce((s, e) => s + e.verseCount, 0);
                 const pct = Math.round((doneV / totV) * 100);
                 const details = document.createElement('details');
@@ -1542,7 +1755,7 @@
                 const content = document.createElement('div');
                 content.className = 'px-4 pb-3 space-y-1.5';
                 entries.forEach(entry => {
-                    const dayDone = !!appState.completedDays[entry.date];
+                    const dayDone = !!plan.completedDays[entry.date];
                     const isToday = entry.date === todayStr;
                     const isPast = entry.date < todayStr;
                     const card = document.createElement('div');
@@ -1568,9 +1781,15 @@
         // 進捗切り替え
         // ============================
         function toggleDay(dateStr) {
-            if (!appState.completedDays) appState.completedDays = {};
-            if (appState.completedDays[dateStr]) delete appState.completedDays[dateStr];
-            else appState.completedDays[dateStr] = true;
+            const plan = getActivePlan();
+            if (!plan) return;
+            if (!plan.completedDays) plan.completedDays = {};
+            if (plan.completedDays[dateStr]) delete plan.completedDays[dateStr];
+            else plan.completedDays[dateStr] = true;
+
+            // バッジ等用実績は getReadingStats 側で各planやcompletedから全再計算されるため、
+            // ここで appState.completed に書き込むと、プラン削除時に幽霊データとして残る不具合が起きるため廃止
+
             saveData(); updateStats(); updateMascot();
         }
 
@@ -1584,11 +1803,30 @@
         // ============================
         // 章の進捗リスト（進捗タブ）
         // ============================
-        function renderChapterList() {
+        let currentChapterListView = 'plan'; // または 'all'
+
+        function renderChapterList(viewMode) {
+            if (viewMode) currentChapterListView = viewMode;
+
+            // ボタン切り替えの見た目変更
+            const btnPlan = document.getElementById('btn-chapter-view-plan');
+            const btnAll = document.getElementById('btn-chapter-view-all');
+            if (btnPlan && btnAll) {
+                if (currentChapterListView === 'plan') {
+                    btnPlan.className = 'flex-1 py-1.5 text-xs rounded-lg border-2 border-olive-500 bg-olive-50 font-bold text-olive-700 transition-all';
+                    btnAll.className = 'flex-1 py-1.5 text-xs rounded-lg border-2 border-scripture-200 text-scripture-500 hover:border-olive-300 transition-all';
+                } else {
+                    btnAll.className = 'flex-1 py-1.5 text-xs rounded-lg border-2 border-olive-500 bg-olive-50 font-bold text-olive-700 transition-all';
+                    btnPlan.className = 'flex-1 py-1.5 text-xs rounded-lg border-2 border-scripture-200 text-scripture-500 hover:border-olive-300 transition-all';
+                }
+            }
+
             const container = document.getElementById('chapter-list');
             container.innerHTML = '';
-            const hasPlan = !!appState.plan;
-            const books = hasPlan ? (appState.plan.books || ['act']) : selectedBooks;
+            const plan = getActivePlan();
+            const hasPlan = !!plan && currentChapterListView === 'plan';
+            const books = hasPlan ? (plan.books || ['act']) : BIBLE_DATA.map(b => b.id);
+            const globalStats = getReadingStats();
 
             books.forEach(bookId => {
                 const book = getBook(bookId);
@@ -1596,12 +1834,16 @@
                 const totalV = bookVerses(book);
                 let readV = 0;
                 if (hasPlan) {
-                    appState.plan.schedule.forEach(day => {
-                        if (!appState.completedDays[day.date]) return;
+                    plan.schedule.forEach(day => {
+                        if (!plan.completedDays[day.date]) return;
                         day.readings.forEach(r => { if (r.bookId === bookId) readV += (r.to - r.from + 1); });
                     });
                 } else {
-                    book.chapters.forEach((v, i) => { if (appState.completed[bookId + ':' + (i + 1)]) readV += v; });
+                    book.chapters.forEach((v, i) => {
+                        var key = bookId + ':' + (i + 1);
+                        if (globalStats.chapDone[key]) readV += v;
+                        else if (globalStats.chapReadVerses && globalStats.chapReadVerses[key]) readV += globalStats.chapReadVerses[key].filter(Boolean).length;
+                    });
                 }
                 readV = Math.min(readV, totalV);
                 const pct = Math.round((readV / totalV) * 100);
@@ -1628,12 +1870,12 @@
                     const ch = i + 1;
                     let chRead = 0;
                     if (hasPlan) {
-                        appState.plan.schedule.forEach(day => {
-                            if (!appState.completedDays[day.date]) return;
+                        plan.schedule.forEach(day => {
+                            if (!plan.completedDays[day.date]) return;
                             day.readings.forEach(r => { if (r.bookId === bookId && r.ch === ch) chRead += (r.to - r.from + 1); });
                         });
                     } else {
-                        chRead = appState.completed[bookId + ':' + ch] ? verses : 0;
+                        chRead = globalStats.chapDone[bookId + ':' + ch] ? verses : (globalStats.chapReadVerses && globalStats.chapReadVerses[bookId + ':' + ch] ? globalStats.chapReadVerses[bookId + ':' + ch].filter(Boolean).length : 0);
                     }
                     chRead = Math.min(chRead, verses);
                     const chDone = chRead >= verses;
@@ -1645,11 +1887,12 @@
                             <div class="flex-1 h-1 bg-scripture-100 rounded-full overflow-hidden"><div class="progress-bar h-full rounded-full" style="width:${chPct}%"></div></div>
                             <span class="text-xs w-14 text-right">${chRead}/${verses}</span>`;
                     } else {
+                        const chPct = Math.round((chRead / verses) * 100);
                         div.className = `flex items-center gap-2 py-1 cursor-pointer hover:bg-scripture-50 rounded-lg px-1 ${chDone ? 'text-olive-500' : 'text-scripture-500'}`;
                         div.onclick = () => { toggleChapter(bookId, ch); renderChapterList(); };
-                        div.innerHTML = `<input type="checkbox" class="custom-check" style="width:16px;height:16px;" ${chDone ? 'checked' : ''} onclick="event.stopPropagation();" onchange="toggleChapter('${bookId}',${ch}); renderChapterList();">
-                            <span class="text-xs flex-1">${ch}章</span>
-                            <span class="text-xs text-scripture-400">${verses}節</span>`;
+                        div.innerHTML = `<span class="text-xs w-12">${ch}章</span>
+                            <div class="flex-1 h-1 bg-scripture-100 rounded-full overflow-hidden"><div class="progress-bar h-full rounded-full" style="width:${chPct}%"></div></div>
+                            <span class="text-xs w-14 text-right">${chRead}/${verses}</span>`;
                     }
                     content.appendChild(div);
                 });
@@ -1663,23 +1906,25 @@
         // 全完了・全解除
         // ============================
         function checkAll() {
-            if (appState.plan) {
-                appState.plan.schedule.forEach(day => { appState.completedDays[day.date] = true; });
+            const plan = getActivePlan();
+            if (plan) {
+                plan.schedule.forEach(day => { plan.completedDays[day.date] = true; });
             } else {
                 selectedBooks.forEach(id => {
                     const book = getBook(id);
                     if (book) book.chapters.forEach((_, i) => { appState.completed[id + ':' + (i + 1)] = true; });
                 });
             }
-            saveData(); renderChapterList(); if (appState.plan) renderPlan();
+            saveData(); renderChapterList(); if (plan) renderPlan();
             showToast('全項目を完了にしました');
         }
 
         function uncheckAll() {
             showConfirm('全チェック解除', 'すべてのチェックを外しますか？', '解除する', () => {
-                if (appState.plan) appState.completedDays = {};
+                const plan = getActivePlan();
+                if (plan) plan.completedDays = {};
                 else appState.completed = {};
-                saveData(); renderChapterList(); if (appState.plan) renderPlan();
+                saveData(); renderChapterList(); if (plan) renderPlan();
                 showToast('チェックをすべて外しました');
             });
         }
@@ -1687,63 +1932,199 @@
         // ============================
         // 統計計算
         // ============================
-        function getCompletedVerseCount() {
-            if (appState.plan) {
-                let t = 0;
-                appState.plan.schedule.forEach(day => { if (appState.completedDays && appState.completedDays[day.date]) t += day.verseCount; });
-                return t;
-            }
-            let t = 0;
-            selectedBooks.forEach(id => {
-                const book = getBook(id);
-                if (book) book.chapters.forEach((v, i) => { if (appState.completed[id + ':' + (i + 1)]) t += v; });
-            });
-            return t;
-        }
+        function getReadingStats() {
+            var completed = appState.completed || {};
+            var chapDone = {};
+            var chapReadVerses = {};
+            Object.keys(completed).forEach(function (k) { if (completed[k]) chapDone[k] = true; });
 
-        function getCompletedChapterCount() {
-            if (appState.plan) {
-                let count = 0;
-                const planBooks = appState.plan.books || [];
-                planBooks.forEach(bookId => {
-                    const book = getBook(bookId);
+            var allPlans = [];
+            if (appState.plans) allPlans = allPlans.concat(appState.plans);
+            if (appState.completedPlans) allPlans = allPlans.concat(appState.completedPlans);
+
+            allPlans.forEach(function (plan) {
+                var planBooks = plan.books || [];
+                planBooks.forEach(function (bookId) {
+                    var book = getBook(bookId);
                     if (!book) return;
-                    book.chapters.forEach((verses, i) => {
-                        let read = 0;
-                        appState.plan.schedule.forEach(day => {
-                            if (!appState.completedDays[day.date]) return;
-                            day.readings.forEach(r => { if (r.bookId === bookId && r.ch === i + 1) read += (r.to - r.from + 1); });
-                        });
-                        if (read >= verses) count++;
+                    book.chapters.forEach(function (verses, i) {
+                        var ch = i + 1;
+                        var key = bookId + ':' + ch;
+                        var readFlags = new Array(verses).fill(false);
+
+                        if (plan.schedule && plan.completedDays) {
+                            plan.schedule.forEach(function (day) {
+                                if (!plan.completedDays[day.date]) return;
+                                day.readings.forEach(function (r) {
+                                    if (r.bookId === bookId && r.ch === ch) {
+                                        for (var vInt = r.from; vInt <= r.to; vInt++) {
+                                            if (vInt >= 1 && vInt <= verses) readFlags[vInt - 1] = true;
+                                        }
+                                    }
+                                });
+                            });
+                        }
+
+                        var read = readFlags.filter(Boolean).length;
+                        if (read > 0) {
+                            if (!chapReadVerses[key]) chapReadVerses[key] = new Array(verses).fill(false);
+                            for (var vi = 0; vi < verses; vi++) {
+                                if (readFlags[vi]) chapReadVerses[key][vi] = true;
+                            }
+                        }
+                        if (read === verses) chapDone[key] = true;
                     });
                 });
-                return count;
+            });
+
+            var totalChapters = 0; // read chapters
+            var totalVerses = 0;   // read verses
+            var booksComplete = [];
+
+            // For progress UI
+            let allAvailChapters = 0; let allAvailVerses = 0;
+            let otTotalCh = 0; let otReadCh = 0; let otTotalV = 0; let otReadV = 0;
+            let ntTotalCh = 0; let ntReadCh = 0; let ntTotalV = 0; let ntReadV = 0;
+
+            BIBLE_DATA.forEach(function (book) {
+                var isOt = book.testament === 'old';
+                var allDone = true;
+                var bookReadVerses = 0;
+                var bookTotalCh = book.chapters.length;
+                var bookTotalVerses = book.chapters.reduce((a, c) => a + c, 0);
+                var bookReadCh = 0;
+
+                book.chapters.forEach(function (v, i) {
+                    var key = book.id + ':' + (i + 1);
+                    var isDoneGlobally = chapDone[key];
+                    var readV = chapReadVerses[key] ? chapReadVerses[key].filter(Boolean).length : 0;
+
+                    if (isDoneGlobally || readV >= v) {
+                        chapDone[key] = true;
+                        totalChapters++;
+                        bookReadVerses += v;
+                        bookReadCh++;
+                    } else {
+                        allDone = false;
+                        bookReadVerses += readV;
+                    }
+                });
+
+                totalVerses += bookReadVerses;
+                if (allDone && book.chapters.length > 0) booksComplete.push(book.id);
+
+                allAvailChapters += bookTotalCh;
+                allAvailVerses += bookTotalVerses;
+                if (isOt) { otTotalCh += bookTotalCh; otReadCh += bookReadCh; otTotalV += bookTotalVerses; otReadV += bookReadVerses; }
+                else { ntTotalCh += bookTotalCh; ntReadCh += bookReadCh; ntTotalV += bookTotalVerses; ntReadV += bookReadVerses; }
+            });
+
+            var readDates = {};
+            allPlans.forEach(function (plan) {
+                if (plan.schedule && plan.completedDays) {
+                    plan.schedule.forEach(function (day) { if (plan.completedDays[day.date]) readDates[day.date] = true; });
+                }
+            });
+            Object.keys(completed).forEach(function (k) {
+                if (completed[k]) {
+                    var today = formatDateISO(new Date());
+                    readDates[today] = true;
+                }
+            });
+            var sortedDates = Object.keys(readDates).sort();
+            var totalDays = sortedDates.length;
+            var streak = 0;
+            if (sortedDates.length > 0) {
+                streak = 1;
+                for (var i = sortedDates.length - 2; i >= 0; i--) {
+                    var d1 = new Date(sortedDates[i + 1]);
+                    var d2 = new Date(sortedDates[i]);
+                    var diff = Math.round((d1 - d2) / 86400000);
+                    if (diff === 1) streak++;
+                    else break;
+                }
             }
-            return Object.values(appState.completed).filter(Boolean).length;
+
+            return {
+                chapDone: chapDone,
+                chapReadVerses: chapReadVerses,
+                totalChapters: totalChapters,
+                totalVerses: totalVerses,
+                booksComplete: booksComplete,
+                streak: streak,
+                totalDays: totalDays,
+
+                // For progress UI
+                readChapters: totalChapters,
+                allAvailChapters: allAvailChapters,
+                allAvailVerses: allAvailVerses,
+                readVerses: totalVerses,
+                otTotalCh: otTotalCh, otReadCh: otReadCh, otTotalV: otTotalV, otReadV: otReadV,
+                ntTotalCh: ntTotalCh, ntReadCh: ntReadCh, ntTotalV: ntTotalV, ntReadV: ntReadV
+            };
         }
 
-        function getTotalChapterCount() {
-            if (appState.plan) return booksChapters(appState.plan.books || []);
-            return booksChapters(selectedBooks);
-        }
-
-        function getTotalVerseCount() {
-            if (appState.plan) return appState.plan.schedule.reduce((s, d) => s + d.verseCount, 0);
-            return booksVerses(selectedBooks);
+        function getCompletedVerseCount(targetPlan) {
+            const plan = targetPlan || getActivePlan();
+            if (plan) {
+                let t = 0;
+                plan.schedule.forEach(day => { if (plan.completedDays && plan.completedDays[day.date]) t += day.verseCount; });
+                return t;
+            }
+            return 0; // 全体の場合は章ごとに集計するため、ここは簡易処理のみ
         }
 
         function updateStats() {
-            const doneV = getCompletedVerseCount();
-            const doneCh = getCompletedChapterCount();
-            const totalCh = getTotalChapterCount();
-            const totalV = getTotalVerseCount();
-            const rate = totalV > 0 ? Math.round((doneV / totalV) * 100) : 0;
-            document.getElementById('total-progress-bar').style.width = rate + '%';
-            document.getElementById('total-progress-text').textContent = rate + '%';
-            document.getElementById('stat-done').textContent = doneCh;
-            document.getElementById('stat-remaining').textContent = totalCh - doneCh;
-            document.getElementById('stat-verses').textContent = doneV;
-            document.getElementById('stat-total-verses').textContent = '/ ' + totalV.toLocaleString();
+            const stats = getReadingStats();
+
+            // 総合
+            const allRate = stats.allAvailVerses > 0 ? Math.round((stats.readVerses / stats.allAvailVerses) * 100) : 0;
+            document.getElementById('prog-bar-all').style.width = allRate + '%';
+            document.getElementById('prog-txt-all').textContent = allRate + '%';
+            document.getElementById('prog-stat-all').textContent = `${stats.readVerses} / ${stats.allAvailVerses} 節`;
+
+            // 旧約
+            const otRate = stats.otTotalV > 0 ? Math.round((stats.otReadV / stats.otTotalV) * 100) : 0;
+            document.getElementById('prog-bar-ot').style.width = otRate + '%';
+            document.getElementById('prog-txt-ot').textContent = otRate + '%';
+            document.getElementById('prog-stat-ot').textContent = `${stats.otReadV} / ${stats.otTotalV} 節`;
+
+            // 新約
+            const ntRate = stats.ntTotalV > 0 ? Math.round((stats.ntReadV / stats.ntTotalV) * 100) : 0;
+            document.getElementById('prog-bar-nt').style.width = ntRate + '%';
+            document.getElementById('prog-txt-nt').textContent = ntRate + '%';
+            document.getElementById('prog-stat-nt').textContent = `${stats.ntReadV} / ${stats.ntTotalV} 節`;
+
+            // アクティブプランの進捗
+            const planCard = document.getElementById('active-plan-progress-card');
+            const container = document.getElementById('active-plans-container');
+            if (appState.plans && appState.plans.length > 0) {
+                planCard.classList.remove('hidden');
+                let html = '';
+                appState.plans.forEach(plan => {
+                    const totalV = (plan.schedule || []).reduce((s, d) => s + d.verseCount, 0);
+                    const completedV = getCompletedVerseCount(plan);
+                    const planRate = totalV > 0 ? Math.round((completedV / totalV) * 100) : 0;
+                    const isActive = appState.activePlanId === plan.id;
+                    let extraBadge = isActive ? '<span class="bg-olive-100 text-olive-700 text-[10px] px-1.5 py-0.5 rounded ml-2">現在の対象</span>' : '';
+
+                    html += `
+                    <div>
+                        <div class="flex justify-between text-sm mb-1 items-center">
+                            <span class="font-bold text-scripture-700">${plan.name}${extraBadge}</span>
+                            <span class="font-bold text-olive-600">${planRate}%</span>
+                        </div>
+                        <div class="w-full h-3 bg-scripture-100 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-emerald-400 to-teal-500 h-full rounded-full transition-all duration-500" style="width: ${planRate}%"></div>
+                        </div>
+                        <p class="text-[10px] text-scripture-400 mt-1 text-right">${completedV} / ${totalV} 節</p>
+                    </div>`;
+                });
+                if (container) container.innerHTML = html;
+            } else {
+                planCard.classList.add('hidden');
+                if (container) container.innerHTML = '';
+            }
         }
 
         // ============================
@@ -1782,9 +2163,8 @@
 
         function updateMascot() {
             var stats = getReadingStats();
-            var totalChaptersInBible = 0;
-            BIBLE_DATA.forEach(function (b) { totalChaptersInBible += b.chapters.length; });
-            var pct = totalChaptersInBible > 0 ? Math.round(stats.totalChapters / totalChaptersInBible * 100) : 0;
+            var totalChaptersInBible = stats.allAvailChapters;
+            var pct = totalChaptersInBible > 0 ? Math.round((stats.readChapters / totalChaptersInBible) * 100) : 0;
             var msgs = getMascotMessages(pct);
             var msg = msgs[mascotMsgIndex % msgs.length];
             var bubble = document.getElementById('mascot-bubble');
@@ -1836,9 +2216,24 @@
                     showConfirm('データの復元', '現在のデータを上書きして復元しますか？', '復元する', () => {
                         if (data.appState) { appState = data.appState; } else { appState = data; }
                         if (!appState.completed) appState.completed = {};
-                        if (!appState.completedDays) appState.completedDays = {};
+                        if (!appState.plans) appState.plans = [];
+                        if (!appState.completedPlans) appState.completedPlans = [];
+
+                        if (appState.plan) {
+                            appState.plan.id = 'plan-' + Date.now();
+                            appState.plan.name = 'プラン 1';
+                            appState.plan.completedDays = appState.completedDays || {};
+                            appState.plans.push(appState.plan);
+                            appState.activePlanId = appState.plan.id;
+                            delete appState.plan;
+                            delete appState.completedDays;
+                        }
+                        if (!appState.activePlanId && appState.plans.length > 0) {
+                            appState.activePlanId = appState.plans[0].id;
+                        }
+
                         if (data.selectedBooks) selectedBooks = data.selectedBooks;
-                        saveData(); renderBookSelector(); renderPlan(); renderChapterList();
+                        saveData(); renderBookSelector(); renderPlan(); renderChapterList(); renderCompletedPlans();
                         showToast('データを復元しました');
                     });
                 } catch (err) { showToast('ファイルの読み込みに失敗しました'); console.error(err); }
@@ -1848,9 +2243,9 @@
 
         function clearAllData() {
             showConfirm('データの初期化', 'すべてのデータを削除しますか？\nこの操作は取り消せません。', 'すべて削除', () => {
-                appState = { plan: null, completed: {}, completedDays: {} };
+                appState = { plans: [], activePlanId: null, completedPlans: [], completed: {} };
                 selectedBooks = ['act'];
-                saveData(); renderBookSelector(); renderPlan(); renderChapterList();
+                saveData(); renderBookSelector(); renderPlan(); renderChapterList(); renderCompletedPlans();
                 showToast('すべてのデータを削除しました');
             });
         }
@@ -2118,80 +2513,7 @@
             return B;
         }
 
-        function getReadingStats() {
-            var completed = appState.completed || {};
-            var chapDone = {};
-            // From direct chapter tracking
-            Object.keys(completed).forEach(function (k) { if (completed[k]) chapDone[k] = true; });
-            // From plan day tracking - accumulate verses per chapter
-            if (appState.plan && appState.plan.schedule) {
-                var planBooks = appState.plan.books || [];
-                planBooks.forEach(function (bookId) {
-                    var book = getBook(bookId);
-                    if (!book) return;
-                    book.chapters.forEach(function (verses, i) {
-                        var ch = i + 1;
-                        var read = 0;
-                        appState.plan.schedule.forEach(function (day) {
-                            if (!appState.completedDays[day.date]) return;
-                            day.readings.forEach(function (r) {
-                                if (r.bookId === bookId && r.ch === ch) read += (r.to - r.from + 1);
-                            });
-                        });
-                        if (read >= verses) chapDone[bookId + ':' + ch] = true;
-                    });
-                });
-            }
 
-            var totalChapters = 0;
-            var totalVerses = 0;
-            var booksComplete = [];
-
-            BIBLE_DATA.forEach(function (book) {
-                var allDone = true;
-                var bookVerses = 0;
-                book.chapters.forEach(function (v, i) {
-                    if (chapDone[book.id + ':' + (i + 1)]) { totalChapters++; bookVerses += v; }
-                    else allDone = false;
-                });
-                totalVerses += bookVerses;
-                if (allDone && book.chapters.length > 0) booksComplete.push(book.id);
-            });
-
-            // Streak & total days
-            var readDates = {};
-            if (appState.plan && appState.plan.schedule) {
-                appState.plan.schedule.forEach(function (day) { if (appState.completedDays[day.date]) readDates[day.date] = true; });
-            }
-            Object.keys(completed).forEach(function (k) {
-                if (completed[k]) {
-                    var today = formatDateISO(new Date());
-                    readDates[today] = true;
-                }
-            });
-            var sortedDates = Object.keys(readDates).sort();
-            var totalDays = sortedDates.length;
-            var streak = 0;
-            if (sortedDates.length > 0) {
-                streak = 1;
-                for (var i = sortedDates.length - 2; i >= 0; i--) {
-                    var d1 = new Date(sortedDates[i + 1]);
-                    var d2 = new Date(sortedDates[i]);
-                    var diff = Math.round((d1 - d2) / 86400000);
-                    if (diff === 1) streak++;
-                    else break;
-                }
-            }
-
-            return {
-                chapDone: chapDone,
-                totalChapters: totalChapters,
-                totalVerses: totalVerses,
-                booksComplete: booksComplete,
-                streak: streak,
-                totalDays: totalDays
-            };
-        }
 
         function evaluateBadge(badge, stats) {
             var c = badge.crit;
@@ -2328,6 +2650,7 @@
             updatePreview();
             renderPlan();
             renderChapterList();
+            renderCompletedPlans();
             renderThemeGrid();
             var savedTheme = localStorage.getItem('bible-reader-theme');
             if (savedTheme) applyTheme(savedTheme);
