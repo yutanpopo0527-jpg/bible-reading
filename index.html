@@ -2634,6 +2634,56 @@
         }
 
         // ============================
+        // ファビコン設定
+        // ============================
+        function applyFavicon(url) {
+            var link = document.getElementById('favicon-link');
+            if (link) link.href = url;
+            var preview = document.getElementById('favicon-preview');
+            var previewImg = document.getElementById('favicon-preview-img');
+            if (url) {
+                if (preview) preview.classList.remove('hidden');
+                if (previewImg) previewImg.src = url;
+            } else {
+                if (preview) preview.classList.add('hidden');
+                if (previewImg) previewImg.src = '';
+            }
+        }
+
+        function setFavicon(url) {
+            var val = typeof url === 'string' ? url : document.getElementById('favicon-input').value.trim();
+            if (!val) return;
+            localStorage.setItem('bible-reader-favicon', val);
+            applyFavicon(val);
+            if (document.getElementById('favicon-input').value !== val) {
+                document.getElementById('favicon-input').value = val;
+            }
+            showToast('ファビコンを設定しました');
+        }
+
+        function clearFavicon() {
+            localStorage.removeItem('bible-reader-favicon');
+            var link = document.getElementById('favicon-link');
+            if (link) link.href = '';
+            var fi = document.getElementById('favicon-input');
+            if (fi) fi.value = '';
+            applyFavicon('');
+            showToast('ファビコンを初期化しました');
+        }
+
+        function loadFaviconFile(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var dataUrl = e.target.result;
+                setFavicon(dataUrl);
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        // ============================
         // 初期化
         // ============================
         function init() {
